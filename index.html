@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Acclusivo — Accessible Digital Skills Learning Platform in Nigerian Sign Language</title>
+  <meta name="description" content="Acclusivo empowers deaf and hard-of-hearing young people in Nigeria to master practical digital skills through Nigerian Sign Language (NSL) video, visual demonstrations, interactive quizzes, and blended cohort mentoring.">
+  <meta name="theme-color" content="#080c14">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🤟</text></svg>">
+</head>
+<body>
+
+  <!-- Visual Flash Screen (Deaf-accessible substitute for audio alert bells) -->
+  <div id="visualFlash" class="visual-flash-overlay" aria-hidden="true"></div>
+
+  <!-- Accessible Visual Toast Notifications -->
+  <aside id="visualToast" class="visual-toast" role="status" aria-live="polite"></aside>
+
+  <!-- ==========================================================================
+       GLOBAL ROLE & ACCESSIBILITY CONTROLS BANNER
+       ========================================================================== -->
+  <div class="global-banner" role="region" aria-label="Role Switcher and Accessibility Controls">
+    <div class="persona-switcher">
+      <span class="persona-label">
+        <span>👤</span> Switch Perspective:
+      </span>
+      <button class="persona-btn active" data-role="learner" id="roleBtnLearner">
+        <span>👨‍💻</span> Deaf Learner
+      </button>
+      <button class="persona-btn" data-role="parent" id="roleBtnParent">
+        <span>👨‍👩‍👦</span> Parent / Guardian
+      </button>
+      <button class="persona-btn" data-role="facilitator" id="roleBtnFacilitator">
+        <span>🧑‍🏫</span> Facilitator Desk
+      </button>
+      <button class="persona-btn" data-role="admin" id="roleBtnAdmin">
+        <span>📊</span> Admin Outcomes
+      </button>
+      <button class="persona-btn" data-role="public" id="roleBtnPublic">
+        <span>🌐</span> Public Admissions
+      </button>
+    </div>
+
+    <div class="a11y-controls">
+      <!-- Dark & White/Light Theme Switcher -->
+      <button class="a11y-btn" id="toggleThemeBtn" title="Switch between Dark and White/Light Theme">
+        <span id="themeIcon">☀️</span> <span id="themeLabel">Light Theme</span>
+      </button>
+      <button class="a11y-btn" id="toggleContrastBtn" title="Toggle High Contrast Mode (WCAG AAA)">
+        <span>🌓</span> High Contrast
+      </button>
+      <button class="a11y-btn" id="toggleFontBtn" title="Toggle Accessible Font Sizing">
+        <span>🔤</span> Font: Normal
+      </button>
+      <button class="a11y-btn" id="toggleLowDataBtn" title="Conserve Cellular Bandwidth in Nigeria">
+        <span>⚡</span> Low-Data Mode
+      </button>
+      <button class="a11y-btn" id="resetDemoBtn" onclick="app.resetDemoData()" title="Reset all sample data to pristine demo state" style="border-color: var(--accent-gold); color: var(--accent-gold);">
+        <span>🔄</span> Reset Demo Data
+      </button>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       MAIN NAVIGATION HEADER
+       ========================================================================== -->
+  <header class="main-header" role="banner">
+    <div class="nav-container">
+      <a href="#" class="brand-group" onclick="app.switchView('public'); return false;">
+        <div class="brand-logo">🤟</div>
+        <div class="brand-text">
+          <h1>ACCLUSIVO</h1>
+          <span class="brand-tag">NSL Accessible Learning • Nigeria</span>
+        </div>
+      </a>
+
+      <nav role="navigation" aria-label="Primary Navigation">
+        <ul class="nav-links">
+          <li><a href="#learner" class="nav-link active" data-view="learner" id="navLearner">My Learning</a></li>
+          <li><a href="#parent" class="nav-link" data-view="parent" id="navParent">Parent Portal</a></li>
+          <li><a href="#facilitator" class="nav-link" data-view="facilitator" id="navFacilitator">Facilitator Desk</a></li>
+          <li><a href="#admin" class="nav-link" data-view="admin" id="navAdmin">Impact Metrics</a></li>
+          <li><a href="#portfolios" class="nav-link" data-view="portfolios" id="navPortfolios">Student Portfolios</a></li>
+          <li><a href="#public" class="nav-link" data-view="public" id="navPublic">Course Catalogue</a></li>
+        </ul>
+      </nav>
+
+      <div class="nav-actions">
+        <div class="user-profile-badge" id="currentPersonaBadge">
+          <span class="user-avatar">👨‍💻</span>
+          <div>
+            <span style="font-weight: 700; display: block; color: #fff; line-height: 1.2;">Chidiebere Okonkwo</span>
+            <span style="font-size: 0.75rem; color: var(--accent-cyan);">Learner • Cohort 2026-Alpha</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==========================================================================
+       MAIN CONTENT CONTAINER
+       ========================================================================== -->
+  <main class="app-container" id="mainAppContainer" role="main">
+
+    <!-- 1. DEAF LEARNER DASHBOARD VIEW -->
+    <section id="view-learner" class="view-section active" aria-label="Learner Learning Dashboard">
+      <!-- Injected dynamically by app.js -->
+    </section>
+
+    <!-- 2. PARENT & PAYMENT PORTAL VIEW -->
+    <section id="view-parent" class="view-section" aria-label="Parent Progress and Payment Portal">
+      <!-- Injected dynamically by app.js -->
+    </section>
+
+    <!-- 3. FACILITATOR DESK VIEW -->
+    <section id="view-facilitator" class="view-section" aria-label="Facilitator Cohort Management Desk">
+      <!-- Injected dynamically by app.js -->
+    </section>
+
+    <!-- 4. ADMINISTRATOR & OUTCOMES DASHBOARD VIEW -->
+    <section id="view-admin" class="view-section" aria-label="Administrator Outcomes and Governance">
+      <!-- Injected dynamically by app.js -->
+    </section>
+
+    <!-- 5. STUDENT PORTFOLIOS VIEW -->
+    <section id="view-portfolios" class="view-section" aria-label="Deaf Student Capstone Portfolios">
+      <!-- Injected dynamically by app.js -->
+    </section>
+
+    <!-- 6. PUBLIC ADMISSIONS & SHOWCASE VIEW -->
+    <section id="view-public" class="view-section" aria-label="Public Course Catalogue and Admissions">
+      <!-- Injected dynamically by app.js -->
+    </section>
+
+  </main>
+
+  <!-- ==========================================================================
+       AI SIGN & CODE MENTOR (AMI AI) FLOATING TRIGGER & MODAL
+       ========================================================================== -->
+  <button class="ai-fab-btn" id="openAiMentorBtn" onclick="app.openAIMentorModal()" title="Ask Ami: AI NSL & Code Mentor">
+    <span>🤖</span> <span>Ami — NSL & Code AI Mentor</span> <span>🤟</span>
+  </button>
+
+  <div id="aiMentorModal" class="ai-modal-overlay" role="dialog" aria-modal="true" aria-label="Ami AI NSL and Code Mentor">
+    <div class="ai-modal-card">
+      <div class="ai-header">
+        <h3><span>🤖</span> Ami — Deaf-First NSL & Coding AI Assistant 🤟</h3>
+        <button onclick="app.closeAIMentorModal()" class="btn btn-secondary btn-sm" style="min-height: 32px; padding: 2px 10px;">✖ Close</button>
+      </div>
+
+      <div class="ai-chat-body" id="aiChatBody">
+        <div class="ai-msg bot">
+          <strong style="color: var(--accent-emerald); display: block; margin-bottom: 4px;">🤟 Welcome to Ami AI!</strong>
+          I am your deaf-friendly coding assistant. I can translate complex tech jargon into <strong>plain visual steps</strong>, show <strong>Nigerian Sign Language (NSL) glosses</strong>, audit your playground code for accessibility, or debug errors visually without audio cues.
+        </div>
+      </div>
+
+      <!-- Quick Action Prompt Chips -->
+      <div class="ai-quick-chips">
+        <button class="ai-chip" onclick="app.sendQuickAIPrompt('audit')">🔍 Audit My Code for Deaf Accessibility</button>
+        <button class="ai-chip" onclick="app.sendQuickAIPrompt('nsl-gloss')">🤟 How do I sign 'Event Listener' in NSL?</button>
+        <button class="ai-chip" onclick="app.sendQuickAIPrompt('simplify-flexbox')">💡 Explain CSS Flexbox visually</button>
+        <button class="ai-chip" onclick="app.sendQuickAIPrompt('contrast')">🎨 Check Color Contrast Ratio</button>
+      </div>
+
+      <form class="ai-input-bar" onsubmit="event.preventDefault(); app.handleAISubmit();">
+        <input type="text" id="aiUserInput" class="ai-input-field" placeholder="Ask Ami anything about HTML, CSS, accessibility, or NSL signs..." autocomplete="off">
+        <button type="submit" class="btn btn-primary btn-sm" style="min-height: 44px; padding: 0 16px;">
+          <span>🚀</span> Ask
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       FOOTER
+       ========================================================================== -->
+  <footer style="background: var(--bg-surface); border-top: 1px solid var(--border-subtle); padding: 32px 20px; font-size: 0.88rem; color: var(--text-muted); text-align: center;">
+    <div style="max-width: 1280px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; align-items: center;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 1.3rem;">🤟</span>
+        <strong style="color: var(--text-heading); font-family: var(--font-heading); font-size: 1.1rem;">Acclusivo Foundation Nigeria</strong>
+      </div>
+      <p style="max-width: 680px; margin: 0 auto; line-height: 1.5;">
+        Building an accessible tech future for deaf and hard-of-hearing Nigerian youth through Nigerian Sign Language (NSL) education, visual computing models, and device equity.
+      </p>
+      <div style="display: flex; gap: 16px; flex-wrap: wrap; margin-top: 6px; font-size: 0.8rem;">
+        <span>📍 Lagos • Abuja • Kaduna • Port Harcourt • Ibadan</span>
+        <span>•</span>
+        <span>WhatsApp / SMS: +234 803 123 4567</span>
+        <span>•</span>
+        <span>Email: hello@acclusivo.ng</span>
+      </div>
+      <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 8px;">
+        © 2026 Acclusivo. All rights reserved. Designed for WCAG 2.2 AAA Accessibility.
+      </div>
+    </div>
+  </footer>
+
+  <!-- Core Scripts -->
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
