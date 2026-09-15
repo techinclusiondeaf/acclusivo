@@ -1059,5 +1059,119 @@ const ACCLUSIVO_SEED_DATA = {
       status: "Sponsored (100% Scholarship)",
       receiptFile: "mtn_scholarship_award_letter.pdf"
     }
+  ],
+
+  // Interactive Nigerian Sign Language (NSL) Tech Vocabulary & Fingerspelling Dictionary
+  nslDictionary: [
+    {
+      id: "dict-html",
+      term: "HTML",
+      phonetic: "H-T-M-L",
+      category: "Structure",
+      handshape: "Angle Brackets '< >' with Index & Thumb",
+      movement: "Both hands form '<' and '>' shapes facing each other, then move inward to close.",
+      facialMarker: "Focused forward gaze, firm mouth",
+      meaning: "The architectural skeleton of the web. It organizes text, buttons, headings, and images into a structured document.",
+      nslSignTip: "Sign H-T-M-L fingerspelling or use the universal opening/closing tag visual gesture."
+    },
+    {
+      id: "dict-css",
+      term: "CSS",
+      phonetic: "Cascading Style Sheets",
+      category: "Design & Style",
+      handshape: "Open Flat Palm Smoothing Layer",
+      movement: "Dominant flat hand gently sweeps over non-dominant palm, as if painting a clean coat of color or styling clothes.",
+      facialMarker: "Relaxed smile, appreciative expression",
+      meaning: "The visual presentation layer. Sets font sizes, dark themes, border contrast, vibrant colors, and layouts.",
+      nslSignTip: "Sign 'STYLE' or 'PAINT COLOR OVER SURFACE'."
+    },
+    {
+      id: "dict-js",
+      term: "JavaScript",
+      phonetic: "Java-Script (JS)",
+      category: "Logic & Events",
+      handshape: "'J' Handshape then Dancing Active Fingers",
+      movement: "Draw letter 'J' in the air, then wiggle fingers downward rapidly to represent real-time interactivity and event listeners.",
+      facialMarker: "Raised eyebrows, alert energetic face",
+      meaning: "The interactive brain of the website. Makes buttons clickable, opens modals, and updates scores without page reload.",
+      nslSignTip: "Sign 'CODE ACTION' or fingerspell 'J-S'."
+    },
+    {
+      id: "dict-tag",
+      term: "HTML Tag (< >)",
+      phonetic: "Tag / Element Container",
+      category: "Syntax",
+      handshape: "Index & Thumb Pinchers",
+      movement: "Pinch open like < >, place element text in between, and close with a forward slash / slash motion.",
+      facialMarker: "Pursed lips on opening, firm nod on closing",
+      meaning: "Keywords enclosed in angle brackets that tell the browser how to render content (e.g. <h1>, <button>, <p>).",
+      nslSignTip: "Always show the closing slash '/' sign when teaching pairing!"
+    },
+    {
+      id: "dict-variable",
+      term: "Variable",
+      phonetic: "Storage Box (Var / Let / Const)",
+      category: "Logic & Data",
+      handshape: "Cupped Hands forming a Container",
+      movement: "Hold hands in a box shape, mimic placing a labeled item inside, then closing the lid.",
+      facialMarker: "Concentrated gaze, nodding understanding",
+      meaning: "A named box in computer memory that stores data values like numbers, student names, or theme preferences.",
+      nslSignTip: "Sign 'BOX HOLD DATA' with a clear label gesture on the side."
+    },
+    {
+      id: "dict-loop",
+      term: "Loop (for / while)",
+      phonetic: "Continuous Repeat Cycle",
+      category: "Control Flow",
+      handshape: "Index Finger pointing in Arch",
+      movement: "Circle index finger forward repeatedly in a steady loop.",
+      facialMarker: "Rhythmic head nod with each cycle",
+      meaning: "Instructs the computer to repeat a task (like checking 30 student quiz submissions) until a condition is met.",
+      nslSignTip: "Sign 'REPEAT AGAIN AND AGAIN' smoothly."
+    },
+    {
+      id: "dict-function",
+      term: "Function",
+      phonetic: "Reusable Code Machine",
+      category: "Logic & Structure",
+      handshape: "F-Handshape or Mechanical Tool C-grip",
+      movement: "Move both hands forward together to indicate an automated machine that receives input and produces output.",
+      facialMarker: "Decisive head nod",
+      meaning: "A block of instructions written once and triggered whenever needed, like calculating a test percentage.",
+      nslSignTip: "Sign 'MACHINE DO WORK' or fingerspell 'F-U-N-C'."
+    },
+    {
+      id: "dict-a11y",
+      term: "Accessibility (a11y)",
+      phonetic: "Universal Inclusion",
+      category: "Ethics & Compliance",
+      handshape: "Both Open 5-Hands Sweeping Outward",
+      movement: "Hands begin at chest and expand broadly outward in a welcoming circle, embracing all individuals.",
+      facialMarker: "Warm, open smile, welcoming eye contact",
+      meaning: "Building digital products so Deaf, hard-of-hearing, blind, and motor-impaired users can learn and work equally.",
+      nslSignTip: "Sign 'ALL PEOPLE ACCESS WITHOUT BARRIER'."
+    },
+    {
+      id: "dict-bug",
+      term: "Bug / Error",
+      phonetic: "Code Mistake / Glitch",
+      category: "Debugging",
+      handshape: "Bent 3-Finger or Claw Handshape",
+      movement: "Scrunch fingers like an insect crawling or sign 'WRONG' (Y-hand to chin).",
+      facialMarker: "Furrowed eyebrows, slight quizzical frown",
+      meaning: "An unexpected defect or typo in the code that causes the program to behave incorrectly or freeze.",
+      nslSignTip: "Sign 'WRONG SPOT' then search with eyes to debug."
+    },
+    {
+      id: "dict-flexbox",
+      term: "Flexbox Layout",
+      phonetic: "Flexible Row / Column Box",
+      category: "Design & Style",
+      handshape: "Two Flat Hands Parallel",
+      movement: "Hands stretch wide apart then compress tight together, demonstrating fluid responsiveness across screen sizes.",
+      facialMarker: "Wide eyes during stretch, tight lips during squeeze",
+      meaning: "A CSS layout model that automatically arranges UI components in tidy rows or columns that fit phones and laptops.",
+      nslSignTip: "Sign 'BOX ARRANGE SMART ROW COLUMN'."
+    }
   ]
 };

@@ -20,9 +20,11 @@ class AcclusivoApp {
       try {
         const parsed = JSON.parse(saved);
         // Ensure fresh seed data properties if new ones were added
-        if (!parsed.data.portfolios || !parsed.data.paymentLogs) {
+        if (!parsed.data.portfolios || !parsed.data.paymentLogs || !parsed.data.nslDictionary) {
           parsed.data = JSON.parse(JSON.stringify(ACCLUSIVO_SEED_DATA));
         }
+        if (parsed.videoContrastFrame === undefined) parsed.videoContrastFrame = false;
+        if (parsed.nslSpeed === undefined) parsed.nslSpeed = 1.0;
         return parsed;
       } catch (e) {
         console.error("Error parsing saved state, resetting to seed data", e);
@@ -32,8 +34,12 @@ class AcclusivoApp {
       currentRole: "learner", // 'learner', 'parent', 'facilitator', 'admin', 'public', 'portfolios'
       activeLearnerId: "learner-1", // Chidiebere Okonkwo
       activeModuleId: "mod-2", // Default to Module 2 for rich interactive demo
+      lessonStep: "catalogue", // 'catalogue' | 'lesson' | 'video' | 'activity' | 'quiz' | 'results'
+      lessonModuleId: null,
       theme: "dark", // 'dark' or 'light'
       highContrast: false,
+      videoContrastFrame: false,
+      nslSpeed: 1.0,
       fontScale: "normal",
       lowDataMode: false,
       data: JSON.parse(JSON.stringify(ACCLUSIVO_SEED_DATA)),
@@ -52,8 +58,12 @@ class AcclusivoApp {
       currentRole: "learner",
       activeLearnerId: "learner-1",
       activeModuleId: "mod-2",
+      lessonStep: "catalogue",
+      lessonModuleId: null,
       theme: "dark",
       highContrast: false,
+      videoContrastFrame: false,
+      nslSpeed: 1.0,
       fontScale: "normal",
       lowDataMode: false,
       data: JSON.parse(JSON.stringify(ACCLUSIVO_SEED_DATA)),
@@ -65,7 +75,7 @@ class AcclusivoApp {
     this.renderCurrentPersona();
     this.renderCurrentView();
     this.showVisualNotification(
-      "Demo Data Reset! 🔄",
+      "Demo Data Reset",
       "Pristine sample data reloaded across all cohorts, learners, and dashboards.",
       "gold"
     );
@@ -78,26 +88,51 @@ class AcclusivoApp {
     this.initA11ySettings();
   }
 
-  // Visual Notification (Deaf-accessible alternative to audio bell)
+  // Visual Notification (Deaf-accessible alternative to audio bell with progress bar & perimeter flash)
   showVisualNotification(title, message, type = "cyan") {
     const toast = document.getElementById("visualToast");
+    const toastContent = document.getElementById("toastContent");
+    const toastBar = document.getElementById("toastProgressBar");
     const flashOverlay = document.getElementById("visualFlash");
     
     if (flashOverlay) {
+      flashOverlay.className = "visual-flash-overlay " + (type === "emerald" ? "emerald" : type === "gold" ? "gold" : "");
       flashOverlay.classList.add("flash");
-      setTimeout(() => flashOverlay.classList.remove("flash"), 250);
+      setTimeout(() => flashOverlay.classList.remove("flash"), 280);
     }
 
-    if (toast) {
-      toast.innerHTML = `
-        <div style="font-size: 1.5rem;">${type === 'emerald' ? '✅' : type === 'gold' ? '🏆' : '🤟'}</div>
-        <div>
-          <strong style="color: #fff; display: block; font-size: 0.95rem;">${title}</strong>
-          <span style="color: var(--text-muted); font-size: 0.85rem;">${message}</span>
+    if (toast && toastContent) {
+      let iconSvg = '';
+      if (type === 'emerald') {
+        iconSvg = `<svg class="ui-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent-emerald)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`;
+      } else if (type === 'gold') {
+        iconSvg = `<svg class="ui-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent-gold)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>`;
+      } else {
+        iconSvg = `<svg class="ui-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>`;
+      }
+
+      toast.className = `visual-toast ${type} active`;
+      toastContent.innerHTML = `
+        <div style="flex-shrink:0;">${iconSvg}</div>
+        <div style="flex:1;">
+          <strong style="color: #fff; display: block; font-size: 0.95rem; font-family: var(--font-heading);">${title}</strong>
+          <span style="color: var(--text-muted); font-size: 0.84rem; line-height: 1.4; display: block;">${message}</span>
         </div>
       `;
-      toast.classList.add("active");
-      setTimeout(() => toast.classList.remove("active"), 4000);
+
+      if (toastBar) {
+        toastBar.style.transition = 'none';
+        toastBar.style.width = '100%';
+        setTimeout(() => {
+          toastBar.style.transition = 'width 4s linear';
+          toastBar.style.width = '0%';
+        }, 30);
+      }
+
+      clearTimeout(this._toastTimer);
+      this._toastTimer = setTimeout(() => {
+        toast.classList.remove("active");
+      }, 4200);
     }
   }
 
@@ -111,42 +146,35 @@ class AcclusivoApp {
     if (this.state.lowDataMode) document.body.classList.add("low-data-mode");
 
     const themeBtn = document.getElementById("toggleThemeBtn");
-    const themeIcon = document.getElementById("themeIcon");
     const themeLabel = document.getElementById("themeLabel");
+    const themeIconSvg = document.getElementById("themeIconSvg");
     const hcBtn = document.getElementById("toggleContrastBtn");
     const fontBtn = document.getElementById("toggleFontBtn");
+    const fontLabel = document.getElementById("fontScaleLabel");
     const lowDataBtn = document.getElementById("toggleLowDataBtn");
 
     if (themeBtn) {
-      if (isLight) {
-        if (themeIcon) themeIcon.textContent = "🌙";
-        if (themeLabel) themeLabel.textContent = "Dark Theme";
-        themeBtn.classList.add("active");
-      } else {
-        if (themeIcon) themeIcon.textContent = "☀️";
-        if (themeLabel) themeLabel.textContent = "White Theme";
-        themeBtn.classList.remove("active");
-      }
+      const updateThemeUI = (light) => {
+        if (themeLabel) themeLabel.textContent = light ? "Dark Theme" : "Light Theme";
+        if (themeIconSvg) {
+          themeIconSvg.innerHTML = light 
+            ? `<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>` 
+            : `<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>`;
+        }
+        themeBtn.classList.toggle("active", light);
+      };
+
+      updateThemeUI(isLight);
 
       themeBtn.onclick = () => {
         const nextLight = !document.body.classList.contains("light-theme");
         document.body.classList.toggle("light-theme", nextLight);
         this.state.theme = nextLight ? "light" : "dark";
-
-        if (nextLight) {
-          if (themeIcon) themeIcon.textContent = "🌙";
-          if (themeLabel) themeLabel.textContent = "Dark Theme";
-          themeBtn.classList.add("active");
-        } else {
-          if (themeIcon) themeIcon.textContent = "☀️";
-          if (themeLabel) themeLabel.textContent = "White Theme";
-          themeBtn.classList.remove("active");
-        }
-
+        updateThemeUI(nextLight);
         this.saveState();
         this.showVisualNotification(
           "Theme Updated",
-          nextLight ? "White / Light Theme Enabled ☀️" : "Dark Slate Theme Enabled 🌙",
+          nextLight ? "Light / High-Readability Mode Active" : "Dark Slate Mode Active",
           "cyan"
         );
       };
@@ -159,27 +187,36 @@ class AcclusivoApp {
         document.body.classList.toggle("high-contrast", this.state.highContrast);
         hcBtn.classList.toggle("active", this.state.highContrast);
         this.saveState();
-        this.showVisualNotification("Visual Display Updated", this.state.highContrast ? "High Contrast Mode (WCAG AAA) Enabled" : "Standard Palette Restored");
+        this.showVisualNotification(
+          "Contrast Updated",
+          this.state.highContrast ? "High Contrast (WCAG AAA 7:1) Enabled" : "Harmonized Dark Theme Restored",
+          "cyan"
+        );
       };
     }
 
     if (fontBtn) {
+      const updateFontLabel = () => {
+        if (fontLabel) {
+          fontLabel.textContent = `Font: ${this.state.fontScale === "large" ? "Large" : this.state.fontScale === "xlarge" ? "X-Large" : "Normal"}`;
+        }
+      };
+      updateFontLabel();
+
       fontBtn.onclick = () => {
         if (this.state.fontScale === "normal") {
           this.state.fontScale = "large";
           document.body.classList.remove("font-xl");
           document.body.classList.add("font-lg");
-          fontBtn.textContent = "Font: Large";
         } else if (this.state.fontScale === "large") {
           this.state.fontScale = "xlarge";
           document.body.classList.remove("font-lg");
           document.body.classList.add("font-xl");
-          fontBtn.textContent = "Font: X-Large";
         } else {
           this.state.fontScale = "normal";
           document.body.classList.remove("font-lg", "font-xl");
-          fontBtn.textContent = "Font: Normal";
         }
+        updateFontLabel();
         this.saveState();
       };
     }
@@ -193,11 +230,13 @@ class AcclusivoApp {
         this.saveState();
         this.showVisualNotification(
           this.state.lowDataMode ? "Low-Data Mode Active" : "Full Media Mode Active",
-          this.state.lowDataMode ? "Video stream paused. Showing visual diagrams & gesture cards to save data." : "Streaming high-definition NSL video lessons."
+          this.state.lowDataMode ? "Saving cellular bandwidth in Nigeria. Showing gesture cards." : "Full NSL video lessons streaming.",
+          "cyan"
         );
         this.renderCurrentView();
       };
     }
+  }
   }
 
   // Top Persona / Role Switcher
@@ -243,16 +282,33 @@ class AcclusivoApp {
     const personaBadge = document.getElementById("currentPersonaBadge");
     const current = this.state.data.personas.find(p => p.id === this.state.currentRole) || {
       name: "Prospective Student",
-      role: "Public Visitor",
-      avatar: "👋"
+      role: "Public Visitor"
     };
+
+    let avatarSvg = '';
+    switch(this.state.currentRole) {
+      case "learner":
+        avatarSvg = `<svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`;
+        break;
+      case "parent":
+        avatarSvg = `<svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`;
+        break;
+      case "facilitator":
+        avatarSvg = `<svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-emerald)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>`;
+        break;
+      case "admin":
+        avatarSvg = `<svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>`;
+        break;
+      default:
+        avatarSvg = `<svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>`;
+    }
 
     if (personaBadge) {
       personaBadge.innerHTML = `
-        <span class="user-avatar">${current.avatar}</span>
+        <span class="user-avatar" style="border: 1px solid var(--border-subtle);">${avatarSvg}</span>
         <div>
-          <span style="font-weight: 700; display: block; color: #fff; line-height: 1.2;">${current.name}</span>
-          <span style="font-size: 0.75rem; color: var(--accent-cyan);">${current.role}</span>
+          <span style="font-weight: 700; display: block; color: var(--text-heading); line-height: 1.2;">${current.name}</span>
+          <span style="font-size: 0.75rem; color: var(--accent-cyan); font-weight: 600;">${current.role}</span>
         </div>
       `;
     }
@@ -303,9 +359,669 @@ class AcclusivoApp {
   }
 
   /* ==========================================================================
-     1. LEARNER VIEW & NSL LESSON PLAYER
+     1. LEARNER VIEW — STEP-BASED JOURNEY
+     Steps: catalogue → lesson → video → activity → quiz → results
      ========================================================================== */
   renderLearnerDashboard() {
+    const step = this.state.lessonStep || "catalogue";
+    switch (step) {
+      case "lesson":   return this.renderLessonPage();
+      case "video":    return this.renderVideoStep();
+      case "activity": return this.renderActivityStep();
+      case "quiz":     return this.renderQuizStep();
+      case "results":  return this.renderResultsStep();
+      default:         return this.renderCourseCatalogue();
+    }
+  }
+
+  // ── Step helpers ────────────────────────────────────────────────────────────
+  goToStep(step, modId) {
+    if (modId) this.state.lessonModuleId = modId;
+    this.state.lessonStep = step;
+    this.saveState();
+    this.renderLearnerDashboard();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  _stepBreadcrumb(activeStep) {
+    const steps = [
+      { key: "catalogue", label: "Courses", icon: `<svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>` },
+      { key: "lesson",    label: "Lesson", icon: `<svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>` },
+      { key: "video",     label: "NSL Video", icon: `<svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/></svg>` },
+      { key: "activity",  label: "Activity", icon: `<svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>` },
+      { key: "quiz",      label: "Quiz", icon: `<svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>` },
+      { key: "results",   label: "Results", icon: `<svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>` }
+    ];
+    const activeIdx = steps.findIndex(s => s.key === activeStep);
+    return `
+      <nav aria-label="Learning Journey Progress" style="margin-bottom:28px;">
+        <ol style="display:flex;flex-wrap:wrap;gap:8px;list-style:none;padding:0;margin:0;align-items:center;">
+          ${steps.map((s, i) => {
+            const done   = i < activeIdx;
+            const active = i === activeIdx;
+            return `
+              <li style="display:flex;align-items:center;gap:6px;">
+                <button
+                  onclick="app.goToStep('${s.key}')" 
+                  aria-current="${active ? 'step' : 'false'}"
+                  style="
+                    background:${active ? 'var(--accent-cyan)' : done ? 'rgba(0,229,255,.15)' : 'var(--bg-surface)'};
+                    color:${active ? '#080c14' : done ? 'var(--accent-cyan)' : 'var(--text-muted)'};
+                    border:1px solid ${active ? 'var(--accent-cyan)' : done ? 'rgba(0,229,255,.4)' : 'var(--border-subtle)'};
+                    border-radius:99px;padding:6px 14px;font-size:.82rem;font-weight:${active?'700':'500'};
+                    cursor:pointer;font-family:inherit;white-space:nowrap;
+                    display:inline-flex;align-items:center;gap:6px;
+                    transition:all .2s;
+                  "
+                >
+                  ${done ? '<svg class="ui-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>' : s.icon}
+                  <span>${s.label}</span>
+                </button>
+                ${i < steps.length - 1 ? '<span style="color:var(--text-dim);font-size:.8rem;">›</span>' : ''}
+              </li>
+            `;
+          }).join('')}
+        </ol>
+      </nav>
+    `;
+  }
+
+  // ── STEP 0: Course Catalogue ─────────────────────────────────────────────
+  renderCourseCatalogue() {
+    const container = document.getElementById("view-learner");
+    if (!container) return;
+    const course  = this.state.data.course;
+    const learner = this.state.data.learners.find(l => l.id === this.state.activeLearnerId) || this.state.data.learners[0];
+
+    container.innerHTML = `
+      ${this._stepBreadcrumb("catalogue")}
+
+      <!-- Learner Welcome Banner -->
+      <div style="background:linear-gradient(135deg,rgba(0,229,255,.12),rgba(0,200,150,.08));border:1px solid rgba(0,229,255,.25);border-radius:var(--radius-lg);padding:28px;margin-bottom:28px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+        <div style="font-size:3rem;line-height:1;">🤟</div>
+        <div style="flex:1;min-width:220px;">
+          <h2 style="color:#fff;margin:0 0 4px;font-size:1.5rem;">
+            Welcome back, ${learner.name}!
+          </h2>
+          <p style="color:var(--text-muted);margin:0;font-size:.93rem;">
+            You are ${learner.progressPercent}% through your journey. Keep going — your next lesson is waiting! 💪
+          </p>
+        </div>
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+          <div style="text-align:center;">
+            <div style="font-size:1.7rem;font-weight:800;color:var(--accent-cyan);">${learner.progressPercent}%</div>
+            <div style="font-size:.75rem;color:var(--text-muted);">Complete</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-size:1.7rem;font-weight:800;color:var(--accent-gold);">🏆</div>
+            <div style="font-size:.75rem;color:var(--text-muted);">On Track</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section Header -->
+      <div style="margin-bottom:20px;">
+        <h2 style="color:#fff;margin:0 0 4px;font-size:1.25rem;">📚 Featured Course</h2>
+        <p style="color:var(--text-muted);margin:0;font-size:.88rem;">
+          Tap a module below to begin your lesson → watch the NSL sign language video → do the activity → take the quiz
+        </p>
+      </div>
+
+      <!-- Course Hero Card -->
+      <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:32px;">
+        <div style="background:linear-gradient(135deg,#0a2540,#0f3460);padding:24px 28px;border-bottom:1px solid var(--border-subtle);">
+          <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;">
+            <span class="badge badge-gold">${course.badge}</span>
+            <span class="badge badge-cyan">${course.level}</span>
+          </div>
+          <h3 style="color:#fff;margin:14px 0 6px;font-size:1.35rem;font-family:var(--font-heading);">${course.title}</h3>
+          <p style="color:#94a3b8;margin:0;font-size:.9rem;max-width:680px;line-height:1.6;">${course.description}</p>
+          <div style="margin-top:14px;font-size:.82rem;color:var(--accent-cyan);font-weight:600;">
+            🛤️ NSL Video → Visual Demo → Simple Explanation → Activity → Quiz → Certificate
+          </div>
+        </div>
+
+        <!-- Module List -->
+        <div style="padding:20px 28px;display:flex;flex-direction:column;gap:12px;">
+          ${course.modules.map(mod => {
+            const isCompleted = learner.completedModules.includes(mod.id);
+            const isActive    = mod.id === this.state.lessonModuleId || (!this.state.lessonModuleId && mod.id === "mod-3");
+            const isLocked    = mod.status === "locked" && !isCompleted;
+
+            return `
+              <div
+                class="module-journey-card ${isLocked ? 'locked' : ''}"
+                id="jcard-${mod.id}"
+                onclick="${isLocked ? 'app.showVisualNotification(\"Module Locked\",\"Complete the previous module first!\",\"gold\")' : `app.startLesson('${mod.id}')`}"
+                style="
+                  display:flex;align-items:center;gap:16px;
+                  background:${isActive ? 'rgba(0,229,255,.08)' : 'var(--bg-surface)'};
+                  border:1.5px solid ${isActive ? 'var(--accent-cyan)' : isCompleted ? 'rgba(52,211,153,.35)' : isLocked ? 'rgba(255,255,255,.06)' : 'var(--border-subtle)'};
+                  border-radius:var(--radius-md);
+                  padding:16px 20px;
+                  cursor:${isLocked ? 'not-allowed' : 'pointer'};
+                  opacity:${isLocked ? '.5' : '1'};
+                  transition:all .2s;
+                "
+              >
+                <!-- Status Icon -->
+                <div style="
+                  width:44px;height:44px;flex-shrink:0;
+                  border-radius:50%;
+                  background:${isCompleted ? 'var(--accent-emerald)' : isActive ? 'var(--accent-cyan)' : 'var(--bg-card)'};
+                  display:flex;align-items:center;justify-content:center;
+                  font-size:${isCompleted || isActive ? '1.2rem' : '1rem'};
+                  font-weight:700;
+                  color:${isCompleted || isActive ? '#080c14' : 'var(--text-muted)'};
+                  border:2px solid ${isCompleted ? 'var(--accent-emerald)' : isActive ? 'var(--accent-cyan)' : 'var(--border-subtle)'};
+                ">
+                  ${isCompleted ? '✔' : isLocked ? '🔒' : mod.number}
+                </div>
+
+                <!-- Info -->
+                <div style="flex:1;min-width:0;">
+                  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                    <h3 style="color:${isLocked ? 'var(--text-muted)' : '#fff'};margin:0;font-size:1rem;">${mod.title}</h3>
+                    ${isCompleted ? '<span class="badge badge-emerald">✓ Done</span>' : isActive ? '<span class="badge badge-cyan">▶ Continue</span>' : isLocked ? '<span class="badge badge-red">Locked</span>' : '<span class="badge badge-gold">Next</span>'}
+                  </div>
+                  <p style="margin:4px 0 0;font-size:.82rem;color:var(--text-muted);">${mod.duration} • 🎬 ${mod.videoDuration} NSL video • ${mod.quiz.length} quiz questions</p>
+                </div>
+
+                <!-- CTA Arrow -->
+                ${!isLocked ? '<span style="font-size:1.3rem;color:var(--accent-cyan);flex-shrink:0;">›</span>' : ''}
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  startLesson(modId) {
+    this.state.activeModuleId = modId;
+    this.goToStep("lesson", modId);
+    this.showVisualNotification("Lesson Started!", "Let's go — watch the NSL video, then complete the activity and quiz.", "cyan");
+  }
+
+  // ── STEP 1: Lesson Overview Page ─────────────────────────────────────────
+  renderLessonPage() {
+    const container = document.getElementById("view-learner");
+    if (!container) return;
+    const course  = this.state.data.course;
+    const mod     = course.modules.find(m => m.id === this.state.activeModuleId) || course.modules[2];
+    const learner = this.state.data.learners.find(l => l.id === this.state.activeLearnerId) || this.state.data.learners[0];
+
+    container.innerHTML = `
+      ${this._stepBreadcrumb("lesson")}
+
+      <div style="max-width:760px;margin:0 auto;">
+        <!-- Lesson Header -->
+        <div style="background:linear-gradient(135deg,rgba(0,229,255,.1),rgba(0,200,150,.06));border:1px solid rgba(0,229,255,.25);border-radius:var(--radius-lg);padding:28px;margin-bottom:24px;">
+          <span class="badge badge-cyan" style="margin-bottom:10px;display:inline-block;">Module ${mod.number}</span>
+          <h2 style="color:#fff;margin:0 0 8px;font-family:var(--font-heading);font-size:1.5rem;">${mod.title}</h2>
+          <p style="color:var(--text-muted);margin:0 0 16px;font-size:.93rem;line-height:1.6;">${mod.summary}</p>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:.82rem;">
+            <span style="color:var(--accent-cyan);">⏱ ${mod.videoDuration} video</span>
+            <span style="color:var(--accent-gold);">❓ ${mod.quiz.length} quiz questions</span>
+            <span style="color:var(--accent-emerald);">📥 ${mod.lowDataSize} offline</span>
+          </div>
+        </div>
+
+        <!-- What You'll Learn -->
+        <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-lg);padding:24px;margin-bottom:20px;">
+          <h3 style="color:#fff;margin:0 0 16px;font-size:1.05rem;">🎯 What you will learn:</h3>
+          <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px;">
+            ${mod.keyConcepts.map(c => `
+              <li style="display:flex;gap:12px;align-items:flex-start;">
+                <span style="color:var(--accent-emerald);font-size:1.1rem;flex-shrink:0;">✔</span>
+                <div>
+                  <strong style="color:#fff;">${c.term}</strong>
+                  <span class="nsl-tip-badge" style="margin-left:8px;">${c.nslTip}</span>
+                  <p style="margin:3px 0 0;font-size:.85rem;color:var(--text-muted);">${c.definition}</p>
+                </div>
+              </li>
+            `).join('')}
+          </ul>
+        </div>
+
+        <!-- NSL Topic Callout -->
+        <div style="background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.3);border-radius:var(--radius-md);padding:16px 20px;margin-bottom:28px;display:flex;gap:14px;align-items:center;">
+          <span style="font-size:1.8rem;">🤟</span>
+          <div>
+            <strong style="color:#a78bfa;display:block;margin-bottom:2px;">NSL Topic:</strong>
+            <span style="color:#e2e8f0;font-size:.93rem;">${mod.nslTopic}</span>
+          </div>
+        </div>
+
+        <!-- CTA: Start Video -->
+        <button
+          id="startVideoBtn"
+          onclick="app.goToStep('video')"
+          style="
+            width:100%;padding:20px;border-radius:var(--radius-lg);
+            background:linear-gradient(135deg,var(--accent-cyan),var(--accent-emerald));
+            color:#080c14;border:none;cursor:pointer;font-size:1.1rem;font-weight:700;
+            font-family:var(--font-heading);display:flex;align-items:center;justify-content:center;gap:12px;
+            transition:transform .2s,box-shadow .2s;
+            box-shadow:0 4px 20px rgba(0,229,255,.35);
+          "
+          onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 30px rgba(0,229,255,.5)';"
+          onmouseout="this.style.transform='';this.style.boxShadow='0 4px 20px rgba(0,229,255,.35)';"
+        >
+          <span style="font-size:1.5rem;">🎬</span>
+          Watch Nigerian Sign Language Video
+          <span style="font-size:1rem;">›</span>
+        </button>
+      </div>
+    `;
+  }
+
+  // ── STEP 2: NSL Video (YouTube embed) ──────────────────────────────────────
+  // ── STEP 2: NSL Video (Deaf-First Enhanced Video Suite) ──────────────────────
+  renderVideoStep() {
+    const container = document.getElementById("view-learner");
+    if (!container) return;
+    const course  = this.state.data.course;
+    const mod     = course.modules.find(m => m.id === this.state.activeModuleId) || course.modules[2];
+
+    // YouTube video ID from https://youtu.be/7lM2qS2XEPk
+    const ytVideoId  = "7lM2qS2XEPk";
+    const ytEmbedUrl = `https://www.youtube.com/embed/${ytVideoId}?enablejsapi=1&rel=0&modestbranding=1&cc_load_policy=1`;
+
+    container.innerHTML = `
+      ${this._stepBreadcrumb("video")}
+
+      <div style="max-width:880px;margin:0 auto;">
+        <!-- Header -->
+        <div style="margin-bottom:18px;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+          <div>
+            <h2 style="color:#fff;margin:0 0 4px;font-size:1.35rem;display:flex;align-items:center;gap:10px;">
+              <svg class="ui-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/></svg>
+              <span>Nigerian Sign Language (NSL) Video Lesson</span>
+            </h2>
+            <p style="color:var(--text-muted);margin:0;font-size:.88rem;">Module ${mod.number}: ${mod.title} • ${mod.videoDuration} • Full Visual Demonstration</p>
+          </div>
+          <button onclick="app.openNSLDictionaryModal()" class="nsl-tool-btn" style="border-color:var(--accent-cyan);color:var(--accent-cyan);" title="Look up NSL signs and fingerspelling">
+            <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            <span>NSL Dictionary</span>
+          </button>
+        </div>
+
+        <!-- NSL Deaf Study Toolbar -->
+        <div class="nsl-toolbar">
+          <div class="nsl-speed-group">
+            <span style="font-size:0.78rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Sign Speed:</span>
+            <button class="nsl-tool-btn nsl-speed-btn ${this.state.nslSpeed === 0.5 ? 'active' : ''}" data-rate="0.5" onclick="app.setNSLPlaybackRate(0.5)" title="Slow down video to inspect handshapes and finger orientation">
+              <span>0.5x Slow Hands</span>
+            </button>
+            <button class="nsl-tool-btn nsl-speed-btn ${this.state.nslSpeed === 0.75 ? 'active' : ''}" data-rate="0.75" onclick="app.setNSLPlaybackRate(0.75)" title="Practice signing speed">
+              <span>0.75x Practice</span>
+            </button>
+            <button class="nsl-tool-btn nsl-speed-btn ${this.state.nslSpeed === 1.0 ? 'active' : ''}" data-rate="1.0" onclick="app.setNSLPlaybackRate(1.0)" title="Standard speed">
+              <span>1.0x Real-time</span>
+            </button>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:8px;">
+            <button id="videoContrastBtn" class="nsl-tool-btn ${this.state.videoContrastFrame ? 'active' : ''}" onclick="app.toggleVideoContrastFrame()" title="Toggle high-contrast matte border for clearer visual silhouette">
+              <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2v20a10 10 0 0 0 0-20z"/></svg>
+              <span>High-Contrast Frame</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- YouTube Video Embed with High-Contrast Frame Support -->
+        <div id="nslVideoBox" class="nsl-video-box ${this.state.videoContrastFrame ? 'high-contrast-frame' : ''}" style="margin-bottom:24px;">
+          <!-- 16:9 Aspect Ratio Wrapper -->
+          <div style="position:relative;padding-top:56.25%;width:100%;">
+            <iframe
+              id="nslVideoFrame"
+              src="${ytEmbedUrl}"
+              title="Nigerian Sign Language Lesson Video — Module ${mod.number}: ${mod.title}"
+              frameborder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowfullscreen
+              style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;"
+            ></iframe>
+          </div>
+
+          <!-- Deaf-Accessible Floating Badge -->
+          <div style="
+            position:absolute;top:12px;left:12px;
+            background:rgba(8,12,20,0.85);backdrop-filter:blur(8px);
+            color:#fff;padding:6px 14px;border-radius:99px;font-size:.78rem;font-weight:700;
+            border:1.5px solid var(--accent-cyan);box-shadow:0 2px 10px rgba(0,0,0,0.5);
+            pointer-events:none;display:flex;align-items:center;gap:6px;
+          ">
+            <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)" stroke-width="2.2"><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg>
+            <span>Nigerian Sign Language (NSL)</span>
+          </div>
+        </div>
+
+        <!-- Deaf-First Handshape & Concept Breakdown Cards -->
+        <div style="margin-bottom:24px;">
+          <h3 style="color:#fff;margin:0 0 12px;font-size:1.05rem;display:flex;align-items:center;gap:8px;">
+            <svg class="ui-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-emerald)" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+            <span>Visual Concept & Handshape Guide (Module ${mod.number}):</span>
+          </h3>
+
+          <div class="nsl-concept-grid">
+            <div class="nsl-concept-card" onclick="app.showVisualNotification('HTML Tag Sign','Form angle brackets < > with index and thumb, then close inward.','cyan')">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                <strong style="color:var(--text-heading);font-size:.95rem;">HTML Tag Syntax</strong>
+                <span class="nsl-handshape-badge">Angle Brackets &lt; &gt;</span>
+              </div>
+              <p style="margin:0;font-size:.84rem;color:var(--text-muted);line-height:1.5;">
+                Both hands make pinchers facing each other. Moving hands forward simulates typing open &lt; and closing &gt; tags.
+              </p>
+              <div style="font-size:.76rem;color:#34d399;font-weight:600;">Facial Marker: Firm mouth nod upon tag closure</div>
+            </div>
+
+            <div class="nsl-concept-card" onclick="app.showVisualNotification('Head vs Body Sign','Point to head for metadata; sweep torso down for visible webpage body.','emerald')">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                <strong style="color:var(--text-heading);font-size:.95rem;">&lt;head&gt; vs &lt;body&gt;</strong>
+                <span class="nsl-handshape-badge">Body Spatial Marker</span>
+              </div>
+              <p style="margin:0;font-size:.84rem;color:var(--text-muted);line-height:1.5;">
+                Point to forehead for &lt;head&gt; (browser settings, title). Open flat hands over the chest to represent the visible &lt;body&gt;.
+              </p>
+              <div style="font-size:.76rem;color:#34d399;font-weight:600;">Facial Marker: Neutral brows for head, open eyes for body</div>
+            </div>
+
+            <div class="nsl-concept-card" onclick="app.showVisualNotification('Alt Text Attribute','Draw a rectangle in air for image, then gesture typing caption description.','gold')">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                <strong style="color:var(--text-heading);font-size:.95rem;">Image &amp; alt="" Text</strong>
+                <span class="nsl-handshape-badge">Frame + Description</span>
+              </div>
+              <p style="margin:0;font-size:.84rem;color:var(--text-muted);line-height:1.5;">
+                Trace an image frame with index fingers, then tap fingers against palm to denote screen-reader text alternatives.
+              </p>
+              <div style="font-size:.76rem;color:#34d399;font-weight:600;">Facial Marker: Attentive eye focus on fingers</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tips row -->
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:28px;">
+          <div style="background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.25);border-radius:var(--radius-md);padding:12px 16px;flex:1;min-width:160px;">
+            <div style="font-size:.8rem;color:#a78bfa;font-weight:700;margin-bottom:2px;display:flex;align-items:center;gap:5px;">
+              <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              <span>Signing Clarity</span>
+            </div>
+            <div style="font-size:.82rem;color:#e2e8f0;">Fullscreen maximizes handshape and facial cue resolution</div>
+          </div>
+          <div style="background:rgba(0,229,255,.08);border:1px solid rgba(0,229,255,.2);border-radius:var(--radius-md);padding:12px 16px;flex:1;min-width:160px;">
+            <div style="font-size:.8rem;color:var(--accent-cyan);font-weight:700;margin-bottom:2px;display:flex;align-items:center;gap:5px;">
+              <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+              <span>Subtitles</span>
+            </div>
+            <div style="font-size:.82rem;color:#e2e8f0;">Turn on CC in YouTube controls for synchronized captions</div>
+          </div>
+          <div style="background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.2);border-radius:var(--radius-md);padding:12px 16px;flex:1;min-width:160px;">
+            <div style="font-size:.8rem;color:var(--accent-emerald);font-weight:700;margin-bottom:2px;display:flex;align-items:center;gap:5px;">
+              <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6"/><path d="M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+              <span>No Pressure</span>
+            </div>
+            <div style="font-size:.82rem;color:#e2e8f0;">Pause or slow down at any point to practice handshapes</div>
+          </div>
+        </div>
+
+        <!-- Navigation Buttons with SVGs -->
+        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+          <button
+            onclick="app.goToStep('lesson')"
+            style="flex:1;min-width:140px;padding:14px;border-radius:var(--radius-md);background:var(--bg-surface);border:1px solid var(--border-subtle);color:#fff;cursor:pointer;font-size:.95rem;font-family:inherit;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:all .2s;"
+          >
+            <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            <span>Back to Lesson</span>
+          </button>
+          <button
+            id="doneVideoBtn"
+            onclick="app.goToStep('activity')"
+            style="
+              flex:2;min-width:200px;padding:14px;border-radius:var(--radius-md);
+              background:linear-gradient(135deg,var(--accent-cyan),var(--accent-emerald));
+              border:none;color:#080c14;cursor:pointer;font-size:1rem;font-weight:700;
+              font-family:var(--font-heading);display:inline-flex;align-items:center;justify-content:center;gap:8px;
+              transition:transform .2s;box-shadow:0 4px 20px rgba(0,229,255,0.3);
+            "
+            onmouseover="this.style.transform='translateY(-2px)';"
+            onmouseout="this.style.transform='';" 
+          >
+            <svg class="ui-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#080c14" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Done Watching — Proceed to Hands-On Activity</span>
+            <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#080c14" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  // ── STEP 3: Activity (Code Playground) ───────────────────────────────────
+  renderActivityStep() {
+    const container = document.getElementById("view-learner");
+    if (!container) return;
+    const course  = this.state.data.course;
+    const mod     = course.modules.find(m => m.id === this.state.activeModuleId) || course.modules[2];
+
+    container.innerHTML = `
+      ${this._stepBreadcrumb("activity")}
+
+      <div style="max-width:1100px;margin:0 auto;">
+        <!-- Header -->
+        <div style="margin-bottom:20px;">
+          <h2 style="color:#fff;margin:0 0 4px;font-size:1.25rem;">💻 Hands-On Activity</h2>
+          <p style="color:var(--text-muted);margin:0 0 4px;font-size:.88rem;">Module ${mod.number}: ${mod.task.title}</p>
+          <p style="color:#e2e8f0;font-size:.9rem;margin:0;">${mod.task.instructions}</p>
+        </div>
+
+        <!-- Step-by-step visual guide -->
+        <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-lg);padding:20px;margin-bottom:20px;">
+          <h3 style="color:var(--accent-cyan);margin:0 0 12px;font-size:.95rem;">📋 Visual Step-by-Step Guide:</h3>
+          <ol style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px;">
+            ${mod.visualDemoSteps.map((step, i) => `
+              <li style="display:flex;gap:12px;align-items:center;">
+                <div style="width:28px;height:28px;flex-shrink:0;border-radius:50%;background:rgba(0,229,255,.15);border:1px solid rgba(0,229,255,.4);color:var(--accent-cyan);display:flex;align-items:center;justify-content:center;font-size:.85rem;font-weight:700;">${i+1}</div>
+                <span style="font-size:.9rem;color:#e2e8f0;">${step.replace(/^\d+\.\s*/, '')}</span>
+              </li>
+            `).join('')}
+          </ol>
+        </div>
+
+        <!-- Code Playground -->
+        <div class="playground-grid" style="margin-bottom:20px;">
+          <!-- Editor -->
+          <div class="code-editor-box">
+            <div class="box-top-bar">
+              <span>📄 index.html</span>
+              <div style="display:flex;gap:6px;">
+                <button class="btn btn-secondary btn-sm" style="min-height:28px;padding:2px 10px;border-color:var(--accent-cyan);color:var(--accent-cyan);" onclick="app.openAIMentorModal();app.sendQuickAIPrompt('audit');">🤖 AI Audit</button>
+                <button class="btn btn-secondary btn-sm" style="min-height:28px;padding:2px 8px;" onclick="app.resetStarterCode('${mod.id}')">Reset</button>
+              </div>
+            </div>
+            <textarea id="codeEditorInput" class="code-textarea" spellcheck="false" oninput="app.updateCodePreview()">${this.state.userCodeDrafts[mod.id] || mod.task.starterCode}</textarea>
+          </div>
+          <!-- Live Preview -->
+          <div class="code-preview-box">
+            <div class="box-top-bar">
+              <span>🖥️ Live Preview</span>
+              <span style="color:var(--accent-emerald);">● Live</span>
+            </div>
+            <iframe id="livePreviewFrame" class="preview-frame" sandbox="allow-scripts"></iframe>
+          </div>
+        </div>
+
+        <!-- Submit + Next -->
+        <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:16px 20px;">
+          <div style="flex:1;min-width:180px;">
+            <strong style="color:#fff;display:block;font-size:.9rem;">Grading Rubric:</strong>
+            <span style="color:var(--text-muted);font-size:.82rem;">${mod.task.gradingRubric}</span>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button class="btn btn-secondary btn-sm" onclick="app.goToStep('video')">← Re-watch Video</button>
+            <button class="btn btn-primary btn-sm" onclick="app.submitAndContinue('${mod.id}')">Submit Work &amp; Go to Quiz ›</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    setTimeout(() => this.updateCodePreview(), 50);
+  }
+
+  submitAndContinue(modId) {
+    const editor = document.getElementById("codeEditorInput");
+    const code = editor ? editor.value : "";
+    const learner = this.state.data.learners.find(l => l.id === this.state.activeLearnerId) || this.state.data.learners[0];
+    learner.assignments[modId] = { status: "submitted", code, submittedAt: new Date().toLocaleTimeString() };
+    this.saveState();
+    this.showVisualNotification("Activity Submitted! 🚀", "Great work! Now take the quiz to complete this module.", "emerald");
+    this.goToStep("quiz");
+  }
+
+  // ── STEP 4: Quiz ────────────────────────────────────────────────────────
+  renderQuizStep() {
+    const container = document.getElementById("view-learner");
+    if (!container) return;
+    const course  = this.state.data.course;
+    const mod     = course.modules.find(m => m.id === this.state.activeModuleId) || course.modules[2];
+
+    container.innerHTML = `
+      ${this._stepBreadcrumb("quiz")}
+
+      <div style="max-width:760px;margin:0 auto;">
+        <div style="margin-bottom:20px;">
+          <h2 style="color:#fff;margin:0 0 4px;font-size:1.25rem;">❓ Module Quiz</h2>
+          <p style="color:var(--text-muted);margin:0;font-size:.88rem;">Answer all ${mod.quiz.length} questions — instant visual feedback after each answer</p>
+        </div>
+
+        <div class="quiz-container" id="quizContainer">
+          ${this.renderQuizHTML(mod)}
+        </div>
+
+        <!-- Check results button -->
+        <div style="margin-top:24px;display:flex;gap:12px;flex-wrap:wrap;">
+          <button onclick="app.goToStep('activity')" style="flex:1;min-width:140px;padding:14px;border-radius:var(--radius-md);background:var(--bg-surface);border:1px solid var(--border-subtle);color:#fff;cursor:pointer;font-size:.95rem;font-family:inherit;">← Back to Activity</button>
+          <button
+            id="seeResultsBtn"
+            onclick="app.finishQuiz()"
+            style="
+              flex:2;min-width:200px;padding:14px;border-radius:var(--radius-md);
+              background:linear-gradient(135deg,var(--accent-gold),#f59e0b);
+              border:none;color:#080c14;cursor:pointer;font-size:1rem;font-weight:700;
+              font-family:var(--font-heading);
+            "
+          >🏆 See My Results ›</button>
+        </div>
+      </div>
+    `;
+  }
+
+  finishQuiz() {
+    const course = this.state.data.course;
+    const mod    = course.modules.find(m => m.id === this.state.activeModuleId) || course.modules[2];
+    // Count correct answers
+    const correct = mod.quiz.filter(q => this.state.quizAnswers[`${mod.id}-${q.id}`] === q.correctIndex).length;
+    const total   = mod.quiz.length;
+    const pct     = Math.round((correct / total) * 100);
+
+    // Mark module complete if ≥ 70%
+    const learner = this.state.data.learners.find(l => l.id === this.state.activeLearnerId) || this.state.data.learners[0];
+    if (pct >= 70 && !learner.completedModules.includes(mod.id)) {
+      learner.completedModules.push(mod.id);
+      learner.progressPercent = Math.min(100, learner.progressPercent + 15);
+    }
+    this.saveState();
+    this.goToStep("results");
+  }
+
+  // ── STEP 5: Results ──────────────────────────────────────────────────────
+  renderResultsStep() {
+    const container = document.getElementById("view-learner");
+    if (!container) return;
+    const course  = this.state.data.course;
+    const mod     = course.modules.find(m => m.id === this.state.activeModuleId) || course.modules[2];
+    const learner = this.state.data.learners.find(l => l.id === this.state.activeLearnerId) || this.state.data.learners[0];
+
+    const correct = mod.quiz.filter(q => this.state.quizAnswers[`${mod.id}-${q.id}`] === q.correctIndex).length;
+    const total   = mod.quiz.length;
+    const pct     = correct > 0 ? Math.round((correct / total) * 100) : 80; // default for demo
+    const passed  = pct >= 70;
+
+    const nextMod = course.modules[course.modules.findIndex(m => m.id === mod.id) + 1];
+
+    container.innerHTML = `
+      ${this._stepBreadcrumb("results")}
+
+      <div style="max-width:680px;margin:0 auto;text-align:center;">
+        <!-- Score Card -->
+        <div style="
+          background:${passed ? 'linear-gradient(135deg,rgba(52,211,153,.15),rgba(0,229,255,.1))' : 'linear-gradient(135deg,rgba(251,191,36,.12),rgba(249,115,22,.08))'};
+          border:2px solid ${passed ? 'var(--accent-emerald)' : 'var(--accent-gold)'};
+          border-radius:var(--radius-lg);padding:40px 32px;margin-bottom:28px;
+        ">
+          <div style="font-size:4rem;margin-bottom:12px;">${passed ? '🏆' : '📚'}</div>
+          <h2 style="color:#fff;margin:0 0 6px;font-size:1.8rem;font-family:var(--font-heading);">
+            ${passed ? 'Module Passed! 🎉' : 'Keep Practising!'}
+          </h2>
+          <p style="color:var(--text-muted);margin:0 0 24px;font-size:.95rem;">
+            Module ${mod.number}: ${mod.title}
+          </p>
+
+          <!-- Score Ring -->
+          <div style="
+            width:120px;height:120px;border-radius:50%;
+            background:conic-gradient(${passed ? 'var(--accent-emerald)' : 'var(--accent-gold)'} ${pct * 3.6}deg, var(--bg-surface) 0deg);
+            display:flex;align-items:center;justify-content:center;
+            margin:0 auto 24px;
+            box-shadow:0 0 30px ${passed ? 'rgba(52,211,153,.4)' : 'rgba(251,191,36,.4)'};
+          ">
+            <div style="width:88px;height:88px;border-radius:50%;background:var(--bg-card);display:flex;align-items:center;justify-content:center;flex-direction:column;">
+              <span style="font-size:1.6rem;font-weight:800;color:#fff;line-height:1;">${pct}%</span>
+              <span style="font-size:.7rem;color:var(--text-muted);">score</span>
+            </div>
+          </div>
+
+          <div style="font-size:1.05rem;color:#fff;margin-bottom:6px;">
+            <strong style="color:${passed ? 'var(--accent-emerald)' : 'var(--accent-gold)'}">${correct}</strong> out of <strong>${total}</strong> correct
+          </div>
+          <p style="color:var(--text-muted);font-size:.88rem;margin:0;">
+            ${passed ? 'Outstanding visual understanding! You are ready for the next module.' : 'Review the NSL video and retry — you need 70% to pass.'}
+          </p>
+        </div>
+
+        <!-- Action Buttons -->
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          ${passed && nextMod ? `
+            <button
+              onclick="app.startLesson('${nextMod.id}')"
+              style="
+                padding:18px;border-radius:var(--radius-md);
+                background:linear-gradient(135deg,var(--accent-cyan),var(--accent-emerald));
+                border:none;color:#080c14;cursor:pointer;font-size:1.05rem;font-weight:700;
+                font-family:var(--font-heading);
+              "
+            >▶ Start Next Module: ${nextMod.title}</button>
+          ` : ''}
+          ${!passed ? `
+            <button onclick="app.goToStep('video')" style="padding:14px;border-radius:var(--radius-md);background:var(--accent-cyan);border:none;color:#080c14;cursor:pointer;font-size:1rem;font-weight:700;font-family:inherit;">🎬 Re-watch NSL Video</button>
+            <button onclick="app.goToStep('quiz')" style="padding:14px;border-radius:var(--radius-md);background:var(--bg-surface);border:1px solid var(--border-subtle);color:#fff;cursor:pointer;font-size:.95rem;font-family:inherit;">❓ Retry Quiz</button>
+          ` : ''}
+          <button onclick="app.goToStep('catalogue')" style="padding:14px;border-radius:var(--radius-md);background:var(--bg-surface);border:1px solid var(--border-subtle);color:#fff;cursor:pointer;font-size:.95rem;font-family:inherit;">📚 Back to Course Catalogue</button>
+        </div>
+
+        <!-- NSL Praise -->
+        <div style="margin-top:28px;background:rgba(139,92,246,.1);border:1px solid rgba(139,92,246,.25);border-radius:var(--radius-md);padding:16px;">
+          <p style="margin:0;color:#c4b5fd;font-size:.88rem;">
+            🤟 <em>"Every sign you learn brings you closer to your future in tech. You are amazing!"</em>
+          </p>
+          <p style="margin:8px 0 0;color:var(--text-muted);font-size:.8rem;">— Bashir Abubakar, Deaf Tech Lead</p>
+        </div>
+      </div>
+    `;
+  }
+
+  // ── Legacy helpers kept for other views ─────────────────────────────────
+  _legacyLearnerDashboard() {
     const container = document.getElementById("view-learner");
     if (!container) return;
 
@@ -622,6 +1338,7 @@ class AcclusivoApp {
     // Render initial live preview
     setTimeout(() => this.updateCodePreview(), 50);
   }
+  // ── End legacy learner dashboard ──
 
   switchActiveLearner(learnerId) {
     this.state.activeLearnerId = learnerId;
@@ -726,9 +1443,11 @@ class AcclusivoApp {
 
   selectModule(modId) {
     this.state.activeModuleId = modId;
+    this.state.lessonModuleId = modId;
+    this.state.lessonStep = "catalogue";
     this.saveState();
     this.renderLearnerDashboard();
-    this.showVisualNotification("Module Loaded", `Switched to ${modId.toUpperCase()}`, "cyan");
+    this.showVisualNotification("Module Selected", `Tap a module to start the lesson journey.`, "cyan");
   }
 
   // Video Controls Simulator
@@ -1857,6 +2576,134 @@ class AcclusivoApp {
       </div>
       <button class="btn btn-secondary btn-sm" onclick="app.sendQuickAIPrompt('audit')">Run Instant Code Audit</button>
     `;
+  }
+
+  /* ==========================================================================
+     9. DEAF-FIRST NSL TECH DICTIONARY & VIDEO FRAME CONTROLS
+     ========================================================================== */
+  openNSLDictionaryModal() {
+    const modal = document.getElementById("nslDictModal");
+    if (modal) {
+      modal.style.display = "flex";
+      this.renderNSLDictionaryItems(this.state.data.nslDictionary || ACCLUSIVO_SEED_DATA.nslDictionary);
+      const searchInput = document.getElementById("nslDictSearch");
+      if (searchInput) {
+        searchInput.value = "";
+        setTimeout(() => searchInput.focus(), 100);
+      }
+    }
+  }
+
+  closeNSLDictionaryModal() {
+    const modal = document.getElementById("nslDictModal");
+    if (modal) modal.style.display = "none";
+  }
+
+  filterNSLDictionary(query) {
+    const list = this.state.data.nslDictionary || ACCLUSIVO_SEED_DATA.nslDictionary;
+    if (!query || !query.trim()) {
+      this.renderNSLDictionaryItems(list);
+      return;
+    }
+    const q = query.toLowerCase().trim();
+    const filtered = list.filter(item => 
+      item.term.toLowerCase().includes(q) ||
+      item.meaning.toLowerCase().includes(q) ||
+      item.category.toLowerCase().includes(q) ||
+      item.handshape.toLowerCase().includes(q)
+    );
+    this.renderNSLDictionaryItems(filtered);
+  }
+
+  renderNSLDictionaryItems(items) {
+    const grid = document.getElementById("nslDictGrid");
+    if (!grid) return;
+    if (!items || items.length === 0) {
+      grid.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align: center; padding: 40px 20px; color: var(--text-muted);">
+          <svg class="ui-icon" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" stroke-width="1.5" style="margin-bottom: 8px;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <p style="margin: 0; font-size: 1rem;">No technical terms matched your search. Try searching "HTML", "Tag", "Variable", or "CSS".</p>
+        </div>
+      `;
+      return;
+    }
+
+    grid.innerHTML = items.map(item => {
+      const chars = item.term.replace(/[^a-zA-Z]/g, '').toUpperCase().split('');
+      return `
+        <div class="nsl-dict-card">
+          <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;">
+            <div>
+              <strong style="color: var(--text-heading); font-size: 1.05rem; font-family: var(--font-heading);">${item.term}</strong>
+              <div style="color: var(--text-dim); font-size: 0.78rem;">${item.phonetic}</div>
+            </div>
+            <span class="badge badge-cyan">${item.category}</span>
+          </div>
+
+          <div style="margin-top: 4px;">
+            <span class="nsl-handshape-badge">
+              <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg>
+              ${item.handshape}
+            </span>
+          </div>
+
+          <p style="margin: 4px 0 0; font-size: 0.86rem; color: var(--text-main); line-height: 1.5;">
+            ${item.meaning}
+          </p>
+
+          <div style="background: var(--bg-surface); border-radius: var(--radius-sm); padding: 10px; border-left: 3px solid var(--accent-emerald); font-size: 0.8rem;">
+            <strong style="color: var(--accent-emerald); display: block; margin-bottom: 2px;">Sign Movement:</strong>
+            <span style="color: var(--text-muted);">${item.movement}</span>
+            <div style="margin-top: 4px; color: #a78bfa; font-size: 0.76rem;">Facial Marker: ${item.facialMarker}</div>
+          </div>
+
+          <div>
+            <span style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Fingerspelling:</span>
+            <div class="fingerspell-strip">
+              ${chars.slice(0, 8).map(c => `<span class="fingerspell-char">${c}</span>`).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  toggleVideoContrastFrame() {
+    this.state.videoContrastFrame = !this.state.videoContrastFrame;
+    const box = document.getElementById("nslVideoBox");
+    const btn = document.getElementById("videoContrastBtn");
+    if (box) {
+      box.classList.toggle("high-contrast-frame", this.state.videoContrastFrame);
+    }
+    if (btn) {
+      btn.classList.toggle("active", this.state.videoContrastFrame);
+    }
+    this.saveState();
+    this.showVisualNotification(
+      "Video Contrast Frame",
+      this.state.videoContrastFrame ? "Deep Matte Black & High-Contrast Cyan Frame Active" : "Standard Video Border Restored",
+      "cyan"
+    );
+  }
+
+  setNSLPlaybackRate(rate) {
+    this.state.nslSpeed = rate;
+    this.saveState();
+    document.querySelectorAll(".nsl-speed-btn").forEach(b => {
+      b.classList.toggle("active", parseFloat(b.getAttribute("data-rate")) === rate);
+    });
+
+    const iframe = document.getElementById("nslVideoFrame");
+    if (iframe && iframe.contentWindow) {
+      iframe.contentWindow.postMessage(JSON.stringify({
+        event: 'command',
+        func: 'setPlaybackRate',
+        args: [rate]
+      }), '*');
+    }
+
+    const labels = { 0.5: "0.5x Slow Hands (Detailed Handshapes)", 0.75: "0.75x Practice Speed", 1.0: "1.0x Real-Time NSL Signing" };
+    this.showVisualNotification("NSL Speed Adjusted", labels[rate] || `${rate}x Speed`, "cyan");
   }
 }
 

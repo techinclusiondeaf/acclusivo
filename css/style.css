@@ -293,10 +293,52 @@ body {
   transition: background-color 0.25s ease, color 0.25s ease;
 }
 
-/* Visual Focus Indicator for Accessibility */
+/* Skip to Content for Screen Readers & Keyboard Nav */
+.skip-link {
+  position: absolute;
+  top: -60px;
+  left: 20px;
+  background: var(--accent-cyan);
+  color: #080c14;
+  font-weight: 800;
+  padding: 10px 18px;
+  border-radius: var(--radius-sm);
+  z-index: 999999;
+  text-decoration: none;
+  font-size: 0.95rem;
+  box-shadow: 0 4px 16px rgba(0, 229, 255, 0.5);
+  transition: top 0.2s ease-in-out;
+}
+.skip-link:focus {
+  top: 15px;
+  outline: 3px solid #ffffff;
+  outline-offset: 2px;
+}
+
+/* UI Icon SVG styling */
+.ui-icon {
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+  stroke: currentColor;
+}
+
+.brand-logo-svg {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, rgba(0, 168, 132, 0.2), rgba(0, 210, 211, 0.25));
+  border: 1.5px solid var(--accent-cyan);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 15px var(--accent-cyan-glow);
+}
+
+/* Visual Focus Indicator for Accessibility (WCAG 2.2 AAA standard) */
 a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
-  outline: 3px solid var(--border-focus);
-  outline-offset: 3px;
+  outline: 2px solid var(--accent-cyan) !important;
+  outline-offset: 3px !important;
 }
 
 /* ==========================================================================
@@ -1490,7 +1532,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   background: var(--bg-card-hover);
 }
 
-/* Visual Feedback Toast Notification */
+/* Visual Feedback Toast Notification (Deaf-First Auditory Substitute) */
 .visual-toast {
   position: fixed;
   bottom: 24px;
@@ -1498,16 +1540,48 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   background: #0d1a29;
   border: 2px solid var(--accent-cyan);
   border-radius: var(--radius-md);
-  padding: 14px 20px;
+  padding: 0;
   color: #ffffff;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 20px var(--accent-cyan-glow);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 25px var(--accent-cyan-glow);
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
   z-index: 9999;
   transform: translateY(120px);
   opacity: 0;
-  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease;
+  min-width: 320px;
+  max-width: 440px;
+}
+
+.visual-toast .toast-content {
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.visual-toast .toast-progress-bar {
+  height: 3.5px;
+  background: var(--accent-cyan);
+  width: 100%;
+  transform-origin: left;
+}
+
+.visual-toast.emerald {
+  border-color: var(--accent-emerald);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 25px var(--accent-emerald-glow);
+}
+.visual-toast.emerald .toast-progress-bar {
+  background: var(--accent-emerald);
+}
+
+.visual-toast.gold {
+  border-color: var(--accent-gold);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 25px var(--accent-gold-glow);
+}
+.visual-toast.gold .toast-progress-bar {
+  background: var(--accent-gold);
 }
 
 body.light-theme .visual-toast {
@@ -1522,19 +1596,30 @@ body.light-theme .visual-toast {
   opacity: 1;
 }
 
-/* Visual Flash Screen for High Urgency / Bell substitute */
+/* Visual Flash Screen for High Urgency / Bell substitute (Perimeter Screen Glow) */
 .visual-flash-overlay {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0, 229, 255, 0.15);
+  box-shadow: inset 0 0 0 6px var(--accent-cyan), inset 0 0 50px rgba(0, 229, 255, 0.45);
+  background: rgba(0, 229, 255, 0.08);
   pointer-events: none;
   z-index: 99999;
   opacity: 0;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .visual-flash-overlay.flash {
   opacity: 1;
+}
+
+.visual-flash-overlay.emerald {
+  box-shadow: inset 0 0 0 6px var(--accent-emerald), inset 0 0 50px rgba(0, 168, 132, 0.45);
+  background: rgba(0, 168, 132, 0.08);
+}
+
+.visual-flash-overlay.gold {
+  box-shadow: inset 0 0 0 6px var(--accent-gold), inset 0 0 50px rgba(245, 158, 11, 0.45);
+  background: rgba(245, 158, 11, 0.08);
 }
 
 /* Print Styles for Verified Certificate */
@@ -1734,4 +1819,204 @@ body.light-theme .visual-toast {
   font-size: 0.8rem;
   font-weight: bold;
 }
+
+/* ==========================================================================
+   STEP-BASED LEARNER JOURNEY STYLES
+   ========================================================================== */
+
+/* Module Journey Cards (Course Catalogue) */
+.module-journey-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+
+.module-journey-card:not(.locked):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(0, 210, 211, 0.15);
+  border-color: var(--accent-cyan) !important;
+}
+
+.module-journey-card.locked {
+  pointer-events: auto;
+}
+
+/* Learner journey breadcrumb step buttons */
+nav[aria-label="Learning Journey Progress"] button:hover {
+  opacity: 0.85;
+  transform: translateY(-1px);
+}
+
+/* Score ring animation */
+@keyframes scoreReveal {
+  from { background: conic-gradient(var(--accent-emerald) 0deg, var(--bg-surface) 0deg); }
+}
+
+/* ==========================================================================
+   DEAF EXPERIENCE: NSL VIDEO SUITE & HANDSHAPE ENHANCEMENTS
+   ========================================================================== */
+
+.nsl-video-box {
+  position: relative;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7);
+  border: 2px solid rgba(0, 229, 255, 0.25);
+  background: #000;
+  transition: all 0.3s ease;
+}
+
+.nsl-video-box.high-contrast-frame {
+  border: 4px solid var(--accent-cyan) !important;
+  box-shadow: 0 0 40px rgba(0, 229, 255, 0.5) !important;
+  background: #000000 !important;
+}
+
+.nsl-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px 18px;
+  margin-bottom: 20px;
+}
+
+.nsl-speed-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.nsl-tool-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-main);
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all var(--transition-fast);
+  font-family: inherit;
+}
+
+.nsl-tool-btn:hover {
+  border-color: var(--accent-cyan);
+  background: rgba(0, 229, 255, 0.12);
+}
+
+.nsl-tool-btn.active {
+  background: var(--accent-cyan);
+  color: #080c14;
+  border-color: var(--accent-cyan);
+  font-weight: 700;
+}
+
+.nsl-concept-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.nsl-concept-card {
+  background: var(--bg-card);
+  border: 1.5px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+  transition: all 0.22s ease;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.nsl-concept-card:hover, .nsl-concept-card.active {
+  border-color: var(--accent-cyan);
+  background: rgba(0, 229, 255, 0.06);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(0, 229, 255, 0.15);
+}
+
+.nsl-handshape-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(139, 92, 246, 0.18);
+  color: #c084fc;
+  border: 1px solid rgba(139, 92, 246, 0.35);
+  border-radius: var(--radius-pill);
+  font-size: 0.76rem;
+  padding: 4px 10px;
+  font-weight: 600;
+}
+
+/* ==========================================================================
+   DEAF EXPERIENCE: INTERACTIVE NSL TECH DICTIONARY
+   ========================================================================== */
+.dict-modal-card {
+  max-width: 860px !important;
+}
+
+.nsl-dict-card {
+  background: var(--bg-card);
+  border: 1.5px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.nsl-dict-card:hover {
+  border-color: var(--accent-cyan);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 229, 255, 0.16);
+}
+
+.fingerspell-strip {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.fingerspell-char {
+  width: 26px;
+  height: 26px;
+  background: var(--bg-surface);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--accent-cyan);
+}
+
+body.light-theme .nsl-toolbar,
+body.light-theme .nsl-concept-card,
+body.light-theme .nsl-dict-card {
+  background: #ffffff;
+  border-color: #cbd5e1;
+}
+
+body.light-theme .fingerspell-char {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #0284c7;
+}
+
 

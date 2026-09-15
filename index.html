@@ -11,11 +11,17 @@
 </head>
 <body>
 
+  <!-- Skip to Main Content Link (WCAG 2.2 AAA Keyboard Accessibility) -->
+  <a href="#mainAppContainer" class="skip-link">Skip to main content</a>
+
   <!-- Visual Flash Screen (Deaf-accessible substitute for audio alert bells) -->
   <div id="visualFlash" class="visual-flash-overlay" aria-hidden="true"></div>
 
-  <!-- Accessible Visual Toast Notifications -->
-  <aside id="visualToast" class="visual-toast" role="status" aria-live="polite"></aside>
+  <!-- Accessible Visual Toast Notifications with Animated Progress Bar -->
+  <aside id="visualToast" class="visual-toast" role="status" aria-live="polite">
+    <div class="toast-content" id="toastContent"></div>
+    <div class="toast-progress-bar" id="toastProgressBar"></div>
+  </aside>
 
   <!-- ==========================================================================
        GLOBAL ROLE & ACCESSIBILITY CONTROLS BANNER
@@ -23,41 +29,57 @@
   <div class="global-banner" role="region" aria-label="Role Switcher and Accessibility Controls">
     <div class="persona-switcher">
       <span class="persona-label">
-        <span>👤</span> Switch Perspective:
+        <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span>Switch Perspective:</span>
       </span>
       <button class="persona-btn active" data-role="learner" id="roleBtnLearner">
-        <span>👨‍💻</span> Deaf Learner
+        <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        <span>Deaf Learner</span>
       </button>
       <button class="persona-btn" data-role="parent" id="roleBtnParent">
-        <span>👨‍👩‍👦</span> Parent / Guardian
+        <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span>Parent / Guardian</span>
       </button>
       <button class="persona-btn" data-role="facilitator" id="roleBtnFacilitator">
-        <span>🧑‍🏫</span> Facilitator Desk
+        <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        <span>Facilitator Desk</span>
       </button>
       <button class="persona-btn" data-role="admin" id="roleBtnAdmin">
-        <span>📊</span> Admin Outcomes
+        <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        <span>Admin Outcomes</span>
       </button>
       <button class="persona-btn" data-role="public" id="roleBtnPublic">
-        <span>🌐</span> Public Admissions
+        <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        <span>Public Admissions</span>
       </button>
     </div>
 
     <div class="a11y-controls">
       <!-- Dark & White/Light Theme Switcher -->
       <button class="a11y-btn" id="toggleThemeBtn" title="Switch between Dark and White/Light Theme">
-        <span id="themeIcon">☀️</span> <span id="themeLabel">Light Theme</span>
+        <svg class="ui-icon" id="themeIconSvg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <span id="themeLabel">Light Theme</span>
       </button>
       <button class="a11y-btn" id="toggleContrastBtn" title="Toggle High Contrast Mode (WCAG AAA)">
-        <span>🌓</span> High Contrast
+        <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 2v20a10 10 0 0 0 0-20z"/></svg>
+        <span>High Contrast</span>
       </button>
       <button class="a11y-btn" id="toggleFontBtn" title="Toggle Accessible Font Sizing">
-        <span>🔤</span> Font: Normal
+        <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+        <span id="fontScaleLabel">Font: Normal</span>
       </button>
       <button class="a11y-btn" id="toggleLowDataBtn" title="Conserve Cellular Bandwidth in Nigeria">
-        <span>⚡</span> Low-Data Mode
+        <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        <span>Low-Data</span>
+      </button>
+      <!-- NSL Visual Dictionary Quick Modal Button -->
+      <button class="a11y-btn highlight-btn" id="openNslDictBtn" onclick="app.openNSLDictionaryModal()" title="Open Interactive NSL Tech Vocabulary & Fingerspelling Dictionary">
+        <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="13" y2="11"/></svg>
+        <span>NSL Dictionary</span>
       </button>
       <button class="a11y-btn" id="resetDemoBtn" onclick="app.resetDemoData()" title="Reset all sample data to pristine demo state" style="border-color: var(--accent-gold); color: var(--accent-gold);">
-        <span>🔄</span> Reset Demo Data
+        <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.5 2v6h-6"/><path d="M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+        <span>Reset Demo</span>
       </button>
     </div>
   </div>
@@ -68,7 +90,9 @@
   <header class="main-header" role="banner">
     <div class="nav-container">
       <a href="#" class="brand-group" onclick="app.switchView('public'); return false;">
-        <div class="brand-logo">🤟</div>
+        <div class="brand-logo-svg" aria-label="Acclusivo NSL Logo">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg>
+        </div>
         <div class="brand-text">
           <h1>ACCLUSIVO</h1>
           <span class="brand-tag">NSL Accessible Learning • Nigeria</span>
@@ -88,11 +112,7 @@
 
       <div class="nav-actions">
         <div class="user-profile-badge" id="currentPersonaBadge">
-          <span class="user-avatar">👨‍💻</span>
-          <div>
-            <span style="font-weight: 700; display: block; color: #fff; line-height: 1.2;">Chidiebere Okonkwo</span>
-            <span style="font-size: 0.75rem; color: var(--accent-cyan);">Learner • Cohort 2026-Alpha</span>
-          </div>
+          <!-- Populated by app.renderCurrentPersona() with SVG -->
         </div>
       </div>
     </div>
@@ -139,37 +159,79 @@
        AI SIGN & CODE MENTOR (AMI AI) FLOATING TRIGGER & MODAL
        ========================================================================== -->
   <button class="ai-fab-btn" id="openAiMentorBtn" onclick="app.openAIMentorModal()" title="Ask Ami: AI NSL & Code Mentor">
-    <span>🤖</span> <span>Ami — NSL & Code AI Mentor</span> <span>🤟</span>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></svg>
+    <span>Ami — NSL & Code AI Mentor</span>
   </button>
 
   <div id="aiMentorModal" class="ai-modal-overlay" role="dialog" aria-modal="true" aria-label="Ami AI NSL and Code Mentor">
     <div class="ai-modal-card">
       <div class="ai-header">
-        <h3><span>🤖</span> Ami — Deaf-First NSL & Coding AI Assistant 🤟</h3>
-        <button onclick="app.closeAIMentorModal()" class="btn btn-secondary btn-sm" style="min-height: 32px; padding: 2px 10px;">✖ Close</button>
+        <h3>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></svg>
+          <span>Ami — Deaf-First NSL & Coding AI Assistant</span>
+        </h3>
+        <button onclick="app.closeAIMentorModal()" class="btn btn-secondary btn-sm" style="min-height: 32px; padding: 2px 10px;" aria-label="Close Ami Mentor">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          <span>Close</span>
+        </button>
       </div>
 
       <div class="ai-chat-body" id="aiChatBody">
         <div class="ai-msg bot">
-          <strong style="color: var(--accent-emerald); display: block; margin-bottom: 4px;">🤟 Welcome to Ami AI!</strong>
+          <strong style="color: var(--accent-emerald); display: block; margin-bottom: 4px;">Welcome to Ami AI!</strong>
           I am your deaf-friendly coding assistant. I can translate complex tech jargon into <strong>plain visual steps</strong>, show <strong>Nigerian Sign Language (NSL) glosses</strong>, audit your playground code for accessibility, or debug errors visually without audio cues.
         </div>
       </div>
 
       <!-- Quick Action Prompt Chips -->
       <div class="ai-quick-chips">
-        <button class="ai-chip" onclick="app.sendQuickAIPrompt('audit')">🔍 Audit My Code for Deaf Accessibility</button>
-        <button class="ai-chip" onclick="app.sendQuickAIPrompt('nsl-gloss')">🤟 How do I sign 'Event Listener' in NSL?</button>
-        <button class="ai-chip" onclick="app.sendQuickAIPrompt('simplify-flexbox')">💡 Explain CSS Flexbox visually</button>
-        <button class="ai-chip" onclick="app.sendQuickAIPrompt('contrast')">🎨 Check Color Contrast Ratio</button>
+        <button class="ai-chip" onclick="app.sendQuickAIPrompt('audit')">Audit My Code for Deaf Accessibility</button>
+        <button class="ai-chip" onclick="app.sendQuickAIPrompt('nsl-gloss')">How do I sign 'Event Listener' in NSL?</button>
+        <button class="ai-chip" onclick="app.sendQuickAIPrompt('simplify-flexbox')">Explain CSS Flexbox visually</button>
+        <button class="ai-chip" onclick="app.sendQuickAIPrompt('contrast')">Check Color Contrast Ratio</button>
       </div>
 
       <form class="ai-input-bar" onsubmit="event.preventDefault(); app.handleAISubmit();">
-        <input type="text" id="aiUserInput" class="ai-input-field" placeholder="Ask Ami anything about HTML, CSS, accessibility, or NSL signs..." autocomplete="off">
+        <input type="text" id="aiUserInput" class="ai-input-field" placeholder="Ask Ami anything about HTML, CSS, accessibility, or NSL signs..." autocomplete="off" aria-label="Ask Ami AI a question">
         <button type="submit" class="btn btn-primary btn-sm" style="min-height: 44px; padding: 0 16px;">
-          <span>🚀</span> Ask
+          <span>Ask</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         </button>
       </form>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       INTERACTIVE NSL TECH DICTIONARY & FINGERSELLING MODAL
+       ========================================================================== -->
+  <div id="nslDictModal" class="ai-modal-overlay" role="dialog" aria-modal="true" aria-label="Interactive Nigerian Sign Language Tech Dictionary">
+    <div class="ai-modal-card dict-modal-card">
+      <div class="ai-header">
+        <h3>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="13" y2="11"/></svg>
+          <span>Nigerian Sign Language (NSL) Tech Dictionary</span>
+        </h3>
+        <button onclick="app.closeNSLDictionaryModal()" class="btn btn-secondary btn-sm" style="min-height: 32px; padding: 2px 10px;" aria-label="Close NSL Dictionary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          <span>Close</span>
+        </button>
+      </div>
+
+      <div style="padding: 16px 20px; border-bottom: 1px solid var(--border-subtle); background: var(--bg-surface);">
+        <input 
+          type="text" 
+          id="nslDictSearch" 
+          class="ai-input-field" 
+          placeholder="Filter tech terms (e.g., HTML, Variable, Loop, CSS, Flexbox, Bug)..." 
+          oninput="app.filterNSLDictionary(this.value)"
+          aria-label="Filter NSL dictionary terms"
+          style="width: 100%; font-size: 0.95rem;"
+        >
+      </div>
+
+      <div class="nsl-dict-grid" id="nslDictGrid" style="padding: 20px; max-height: 60vh; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px;">
+        <!-- Injected dynamically by app.js -->
+      </div>
     </div>
   </div>
 
