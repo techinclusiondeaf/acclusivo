@@ -1175,3 +1175,9 @@ const ACCLUSIVO_SEED_DATA = {
     }
   ]
 };
+
+// Expose globally on window for robust accessibility across all browser scopes
+if (typeof window !== "undefined") {
+  window.ACCLUSIVO_SEED_DATA = ACCLUSIVO_SEED_DATA;
+}
+

@@ -237,7 +237,6 @@ class AcclusivoApp {
       };
     }
   }
-  }
 
   // Top Persona / Role Switcher
   bindGlobalControls() {
@@ -1403,10 +1402,16 @@ class AcclusivoApp {
     this.state.userCodeDrafts[this.state.activeModuleId] = code;
     this.saveState();
 
-    const doc = frame.contentDocument || frame.contentWindow.document;
-    doc.open();
-    doc.write(code);
-    doc.close();
+    try {
+      const doc = frame.contentDocument || (frame.contentWindow && frame.contentWindow.document);
+      if (doc) {
+        doc.open();
+        doc.write(code);
+        doc.close();
+      }
+    } catch (e) {
+      console.warn("Could not write to preview frame:", e);
+    }
   }
 
   resetStarterCode(modId) {
@@ -2422,7 +2427,7 @@ class AcclusivoApp {
     if (modal) {
       modal.style.display = "flex";
       const input = document.getElementById("aiUserInput");
-      if (input) setTimeout(() => input.focus(), 100);
+      if (input) setTimeout(() => { if (typeof input.focus === "function") input.focus(); }, 100);
     }
   }
 
@@ -2589,7 +2594,7 @@ class AcclusivoApp {
       const searchInput = document.getElementById("nslDictSearch");
       if (searchInput) {
         searchInput.value = "";
-        setTimeout(() => searchInput.focus(), 100);
+        setTimeout(() => { if (typeof searchInput.focus === "function") searchInput.focus(); }, 100);
       }
     }
   }
@@ -2707,9 +2712,20 @@ class AcclusivoApp {
   }
 }
 
-// Initialize on page load
+// Initialize on page load & expose globally to window.app for inline event handlers
 let app;
-document.addEventListener("DOMContentLoaded", () => {
-  app = new AcclusivoApp();
-});
+function initAcclusivo() {
+  if (!window.app) {
+    window.app = new AcclusivoApp();
+    app = window.app;
+  }
+}
+
+if (typeof document !== "undefined") {
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initAcclusivo);
+  } else {
+    initAcclusivo();
+  }
+}
 
