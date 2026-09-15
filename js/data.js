@@ -1176,8 +1176,14 @@ const ACCLUSIVO_SEED_DATA = {
   ]
 };
 
-// Expose globally on window for robust accessibility across all browser scopes
+// Expose globally on window & global for robust accessibility across browser & Node scopes
 if (typeof window !== "undefined") {
   window.ACCLUSIVO_SEED_DATA = ACCLUSIVO_SEED_DATA;
+}
+if (typeof global !== "undefined") {
+  global.ACCLUSIVO_SEED_DATA = ACCLUSIVO_SEED_DATA;
+}
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = ACCLUSIVO_SEED_DATA;
 }
 

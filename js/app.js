@@ -5,6 +5,119 @@
  * Admin Impact Dashboard, Student Portfolios, and 1-Click Demo Reset.
  */
 
+// UI/UX Pro Max Age-Adaptive Intelligence Profiles for Deaf Learners
+const AGE_TIERS = {
+  "10-14": {
+    name: "Junior Explorer Track",
+    badge: "Ages 10–14",
+    badgeColor: "emerald",
+    minAge: 10,
+    maxAge: 14,
+    defaultAge: 12,
+    tagline: "Visual Games, Avatar Cards & Animated Storytelling",
+    description: "Designed for young deaf learners. Coding is presented through colorful visual cards, avatar creators, and animated NSL stories without intimidating walls of text.",
+    topics: [
+      "Animated Avatar & Cyber-Pet Cards",
+      "CSS Color Magic & Neon Glow Effects",
+      "Interactive Zoo Cards with NSL Signs",
+      "Button Tap Triggers & Soundless Visual Alerts"
+    ],
+    activities: [
+      "Activity 1: Code your first deaf cyber-pet card with eye-catching neon borders",
+      "Activity 2: Practice the 5-step NSL fingerspelling sequence for tech words",
+      "Activity 3: Create an interactive tap button that changes background colors visually"
+    ],
+    chips: [
+      { id: "junior-game", label: "🎮 Suggest a fun game project for my age" },
+      { id: "junior-color", label: "✨ Show me CSS color magic & glow" },
+      { id: "junior-sign", label: "🤟 How do I sign 'Computer' in NSL?" },
+      { id: "junior-pet", label: "🐾 Help me build an avatar card" }
+    ]
+  },
+  "15-18": {
+    name: "Secondary Launchpad Track",
+    badge: "Ages 15–18",
+    badgeColor: "cyan",
+    minAge: 15,
+    maxAge: 18,
+    defaultAge: 17,
+    tagline: "High-School Prep & Accessible Student Portfolios",
+    description: "Built for deaf secondary school students and school-leavers. Master semantic HTML5 landmarks, CSS styling, and accessible layout design ready for academic projects and early portfolios.",
+    topics: [
+      "Accessible Personal Bio Card",
+      "CSS Box Model & Glow Effects",
+      "Embedded NSL Video Player Integration",
+      "High-Contrast Responsive Layouts"
+    ],
+    activities: [
+      "Activity 1: Structure your student portfolio bio card with semantic <header> and <main>",
+      "Activity 2: Watch Module 1 NSL video and test slow-motion sign playback",
+      "Activity 3: Pass visual quiz on HTML syntax and inspect live preview"
+    ],
+    chips: [
+      { id: "secondary-topics", label: "📚 Recommend secondary/WAEC tech topics" },
+      { id: "audit", label: "🔍 Audit my bio card for accessibility" },
+      { id: "nsl-gloss", label: "🤟 How do I sign 'Event Listener' in NSL?" },
+      { id: "simplify-flexbox", label: "💡 Explain CSS Flexbox visually" }
+    ]
+  },
+  "19-24": {
+    name: "Career Pro Developer Track",
+    badge: "Ages 19–24",
+    badgeColor: "gold",
+    minAge: 19,
+    maxAge: 24,
+    defaultAge: 21,
+    tagline: "Remote Freelance Readiness & WCAG 2.2 AAA Compliance",
+    description: "Tailored for deaf young adults entering the digital economy. Craft client-grade landing pages, production semantic markup, ARIA accessibility trees, and freelance portfolio showcases.",
+    topics: [
+      "Production Client Landing Pages",
+      "WCAG 2.2 AAA Accessibility Auditing",
+      "Modern Semantic Forms & Validation",
+      "Remote Freelance Gig Readiness"
+    ],
+    activities: [
+      "Activity 1: Build a high-converting accessible landing page for a client",
+      "Activity 2: Audit code with Ami AI for ARIA roles and keyboard navigability",
+      "Activity 3: Publish capstone project to verified public portfolio gallery"
+    ],
+    chips: [
+      { id: "career-freelance", label: "💼 Suggest freelance-ready portfolio topics" },
+      { id: "career-wcag", label: "🛡️ Audit my code for WCAG AAA standards" },
+      { id: "career-client", label: "📱 Explain responsive layouts for clients" },
+      { id: "career-signs", label: "🤟 How do I sign 'API' and 'Database' in NSL?" }
+    ]
+  },
+  "25+": {
+    name: "Adult Reskilling & Business Track",
+    badge: "Ages 25+",
+    badgeColor: "red",
+    minAge: 25,
+    maxAge: 75,
+    defaultAge: 29,
+    tagline: "Business Portals, Invoicing & Digital Independence",
+    description: "Designed for adult career switchers and deaf entrepreneurs. Learn high-value practical web development to build business storefronts, service booking forms, and client portals with visual independence.",
+    topics: [
+      "Small Business Showcase & Products",
+      "Accessible Customer Order Forms",
+      "Dark Mode Admin Dashboard UI",
+      "Digital Invoicing & Commerce Tools"
+    ],
+    activities: [
+      "Activity 1: Create a commercial product catalog with high-contrast pricing tables",
+      "Activity 2: Build a deaf-friendly customer enquiry form without audio CAPTCHAs",
+      "Activity 3: Setup verified business profile on Acclusivo network"
+    ],
+    chips: [
+      { id: "adult-biz", label: "📈 Suggest business web projects for my brand" },
+      { id: "adult-order", label: "📝 How to code a deaf-friendly order form?" },
+      { id: "adult-contrast", label: "🎨 What color contrast is best for commercial sites?" },
+      { id: "audit", label: "🔍 Audit my business portal layout" }
+    ]
+  }
+};
+if (typeof window !== "undefined") window.AGE_TIERS = AGE_TIERS;
+
 class AcclusivoApp {
   constructor() {
     this.state = this.loadState();
@@ -25,6 +138,20 @@ class AcclusivoApp {
         }
         if (parsed.videoContrastFrame === undefined) parsed.videoContrastFrame = false;
         if (parsed.nslSpeed === undefined) parsed.nslSpeed = 1.0;
+        if (!parsed.onboardingProfile) {
+          parsed.onboardingProfile = {
+            completed: true,
+            fullName: "Chidiebere Okonkwo",
+            ageGroup: "15-18",
+            exactAge: 17,
+            trackName: "Secondary Launchpad Track",
+            communicationMode: "nsl-first",
+            signingLevel: "fluent",
+            primaryGoal: "portfolio",
+            preferredTopics: ["Accessible HTML Bio Cards", "CSS Box Model & Glow", "NSL Video Integration"]
+          };
+        }
+        if (parsed.onboardingStep === undefined) parsed.onboardingStep = 1;
         return parsed;
       } catch (e) {
         console.error("Error parsing saved state, resetting to seed data", e);
@@ -42,6 +169,18 @@ class AcclusivoApp {
       nslSpeed: 1.0,
       fontScale: "normal",
       lowDataMode: false,
+      onboardingStep: 1,
+      onboardingProfile: {
+        completed: true,
+        fullName: "Chidiebere Okonkwo",
+        ageGroup: "15-18",
+        exactAge: 17,
+        trackName: "Secondary Launchpad Track",
+        communicationMode: "nsl-first",
+        signingLevel: "fluent",
+        primaryGoal: "portfolio",
+        preferredTopics: ["Accessible HTML Bio Cards", "CSS Box Model & Glow", "NSL Video Integration"]
+      },
       data: JSON.parse(JSON.stringify(ACCLUSIVO_SEED_DATA)),
       userCodeDrafts: {},
       quizAnswers: {}
@@ -66,6 +205,18 @@ class AcclusivoApp {
       nslSpeed: 1.0,
       fontScale: "normal",
       lowDataMode: false,
+      onboardingStep: 1,
+      onboardingProfile: {
+        completed: true,
+        fullName: "Chidiebere Okonkwo",
+        ageGroup: "15-18",
+        exactAge: 17,
+        trackName: "Secondary Launchpad Track",
+        communicationMode: "nsl-first",
+        signingLevel: "fluent",
+        primaryGoal: "portfolio",
+        preferredTopics: ["Accessible HTML Bio Cards", "CSS Box Model & Glow", "NSL Video Integration"]
+      },
       data: JSON.parse(JSON.stringify(ACCLUSIVO_SEED_DATA)),
       userCodeDrafts: {},
       quizAnswers: {}
@@ -86,6 +237,7 @@ class AcclusivoApp {
     this.renderCurrentPersona();
     this.renderCurrentView();
     this.initA11ySettings();
+    this.updateOnboardingNavButton();
   }
 
   // Visual Notification (Deaf-accessible alternative to audio bell with progress bar & perimeter flash)
@@ -323,7 +475,9 @@ class AcclusivoApp {
     const activeLnk = document.querySelector(`.nav-link[data-view="${viewId}"]`);
     if (activeLnk) activeLnk.classList.add("active");
 
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    if (typeof window !== "undefined" && typeof window.scrollTo === "function") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   }
 
   // Master Render View based on Current Role
@@ -431,12 +585,19 @@ class AcclusivoApp {
     if (!container) return;
     const course  = this.state.data.course;
     const learner = this.state.data.learners.find(l => l.id === this.state.activeLearnerId) || this.state.data.learners[0];
+    const profile = this.state.onboardingProfile || {
+      exactAge: 17,
+      ageGroup: "15-18",
+      trackName: "Secondary Launchpad Track",
+      communicationMode: "nsl-first",
+      preferredTopics: ["Accessible HTML Bio Cards", "CSS Box Model & Glow", "NSL Video Integration"]
+    };
 
     container.innerHTML = `
       ${this._stepBreadcrumb("catalogue")}
 
       <!-- Learner Welcome Banner -->
-      <div style="background:linear-gradient(135deg,rgba(0,229,255,.12),rgba(0,200,150,.08));border:1px solid rgba(0,229,255,.25);border-radius:var(--radius-lg);padding:28px;margin-bottom:28px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+      <div style="background:linear-gradient(135deg,rgba(0,229,255,.12),rgba(0,200,150,.08));border:1px solid rgba(0,229,255,.25);border-radius:var(--radius-lg);padding:28px;margin-bottom:24px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
         <div style="font-size:3rem;line-height:1;">🤟</div>
         <div style="flex:1;min-width:220px;">
           <h2 style="color:#fff;margin:0 0 4px;font-size:1.5rem;">
@@ -456,6 +617,29 @@ class AcclusivoApp {
             <div style="font-size:.75rem;color:var(--text-muted);">On Track</div>
           </div>
         </div>
+      </div>
+
+      <!-- AI Personalized Learning Track Banner (Age-Adaptive Engine) -->
+      <div class="ai-personalized-banner">
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+          <div style="width:42px;height:42px;border-radius:50%;background:rgba(0,229,255,0.15);border:1.5px solid var(--accent-cyan);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg class="ui-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></svg>
+          </div>
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              <strong style="color:#fff;font-size:1rem;font-family:var(--font-heading);">Ami AI Curriculum: ${profile.trackName}</strong>
+              <span class="badge badge-emerald">Age ${profile.exactAge} (${profile.ageGroup})</span>
+              <span class="badge badge-cyan">${profile.communicationMode === 'nsl-first' ? 'NSL-First' : 'Bilingual'}</span>
+            </div>
+            <p style="margin:4px 0 0;font-size:0.84rem;color:var(--text-muted);">
+              <strong>AI Personalized Topics:</strong> ${profile.preferredTopics.join(' • ')}
+            </p>
+          </div>
+        </div>
+        <button onclick="app.openOnboardingModal()" class="nsl-tool-btn" style="border-color:var(--accent-cyan);color:var(--accent-cyan);" title="Adjust age bracket or learning track">
+          <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          <span>Adjust Age &amp; Track</span>
+        </button>
       </div>
 
       <!-- Section Header -->
@@ -2426,6 +2610,7 @@ class AcclusivoApp {
     const modal = document.getElementById("aiMentorModal");
     if (modal) {
       modal.style.display = "flex";
+      this.renderAIQuickChips();
       const input = document.getElementById("aiUserInput");
       if (input) setTimeout(() => { if (typeof input.focus === "function") input.focus(); }, 100);
     }
@@ -2436,12 +2621,46 @@ class AcclusivoApp {
     if (modal) modal.style.display = "none";
   }
 
+  renderAIQuickChips() {
+    const container = document.getElementById("aiQuickChips");
+    if (!container) return;
+    const profile = this.state.onboardingProfile || { exactAge: 17, ageGroup: "15-18" };
+    const tier = AGE_TIERS[profile.ageGroup] || AGE_TIERS["15-18"];
+    const chips = tier.chips || [
+      { id: "audit", label: "Audit My Code for Deaf Accessibility" },
+      { id: "nsl-gloss", label: "How do I sign 'Event Listener' in NSL?" },
+      { id: "simplify-flexbox", label: "Explain CSS Flexbox visually" },
+      { id: "contrast", label: "Check Color Contrast Ratio" }
+    ];
+    container.innerHTML = chips.map(c => `
+      <button type="button" class="ai-chip" onclick="app.sendQuickAIPrompt('${c.id}')">${c.label}</button>
+    `).join("");
+  }
+
   sendQuickAIPrompt(type) {
+    const profile = this.state.onboardingProfile || { exactAge: 17, ageGroup: "15-18" };
     let prompt = "";
     if (type === "audit") prompt = "Audit my current playground code for deaf accessibility standards.";
     else if (type === "nsl-gloss") prompt = "How do I sign 'Event Listener' in Nigerian Sign Language?";
     else if (type === "simplify-flexbox") prompt = "Explain CSS Flexbox in 3 plain visual steps.";
     else if (type === "contrast") prompt = "What are the recommended high-contrast color pairs for deaf learners?";
+    // Junior (10-14)
+    else if (type === "junior-game") prompt = `Suggest a fun, visual coding game project suited for my age (${profile.exactAge}).`;
+    else if (type === "junior-color") prompt = "Show me how to make an avatar glow with CSS color magic.";
+    else if (type === "junior-sign") prompt = "How do I sign 'Computer' in Nigerian Sign Language (NSL)?";
+    else if (type === "junior-pet") prompt = "Help me code an animated deaf cyber-pet card in the playground.";
+    // Secondary (15-18)
+    else if (type === "secondary-topics") prompt = `What are the best tech topics and activities for my age group (${profile.ageGroup})?`;
+    // Career Pro (19-24)
+    else if (type === "career-freelance") prompt = `Suggest freelance-ready portfolio topics and client projects for age ${profile.exactAge}.`;
+    else if (type === "career-wcag") prompt = "Audit my code against WCAG 2.2 AAA accessibility rules for remote clients.";
+    else if (type === "career-client") prompt = "Explain how to build responsive, mobile-first client layouts visually.";
+    else if (type === "career-signs") prompt = "How do I sign 'API', 'Server', and 'Database' in Nigerian Sign Language?";
+    // Adult (25+)
+    else if (type === "adult-biz") prompt = `Suggest practical business web projects and commercial topics for age ${profile.exactAge}.`;
+    else if (type === "adult-order") prompt = "How do I code a deaf-friendly customer order form with visual feedback?";
+    else if (type === "adult-contrast") prompt = "What high-contrast color palettes work best for professional commercial sites?";
+    else prompt = type;
 
     const input = document.getElementById("aiUserInput");
     if (input) input.value = prompt;
@@ -2467,7 +2686,7 @@ class AcclusivoApp {
     // Typing indicator
     const botMsg = document.createElement("div");
     botMsg.className = "ai-msg bot";
-    botMsg.innerHTML = `<span style="color: var(--accent-cyan);">🤖 Ami is analyzing visually... 🤟</span>`;
+    botMsg.innerHTML = `<span style="color: var(--accent-cyan);">🤖 Ami is analyzing visually for Age ${this.state.onboardingProfile?.exactAge || 17}... 🤟</span>`;
     chatBody.appendChild(botMsg);
     chatBody.scrollTop = chatBody.scrollHeight;
 
@@ -2483,6 +2702,58 @@ class AcclusivoApp {
     const lower = prompt.toLowerCase();
     const editor = document.getElementById("codeEditorInput");
     const currentCode = editor ? editor.value : "";
+    const profile = this.state.onboardingProfile || { exactAge: 17, ageGroup: "15-18", trackName: "Secondary Launchpad Track" };
+    const tier = AGE_TIERS[profile.ageGroup] || AGE_TIERS["15-18"];
+
+    // 0. Age Identification, Personalized Topics & Activities Query
+    if (
+      lower.includes("age") || 
+      lower.includes("topic") || 
+      lower.includes("activity") || 
+      lower.includes("curriculum") || 
+      lower.includes("recommend") ||
+      lower.includes("what should i build") ||
+      lower.includes("game project") ||
+      lower.includes("cyber-pet") ||
+      lower.includes("freelance") ||
+      lower.includes("business web")
+    ) {
+      return `
+        <div style="margin-bottom: 6px;">
+          <strong style="color: var(--accent-emerald); font-size: 1.05rem; display: flex; align-items: center; gap: 8px;">
+            <svg class="ui-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-emerald)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            <span>Ami AI Curriculum: ${tier.name} (Age ${profile.exactAge})</span>
+          </strong>
+          <span class="badge badge-${tier.badgeColor}" style="margin-top: 4px;">Tier: ${tier.badge} • ${tier.tagline}</span>
+        </div>
+        <p style="margin: 8px 0 10px; font-size: 0.88rem; color: var(--text-main);">
+          Ami has analyzed your age profile (<strong>${profile.exactAge} years old</strong>, preferred mode: <strong>${profile.communicationMode === 'nsl-first' ? 'NSL-First' : 'Bilingual'}</strong>) and pushed the following age-adapted curriculum:
+        </p>
+        
+        <div style="background: var(--bg-surface); border-radius: var(--radius-sm); padding: 12px; border-left: 3px solid var(--accent-cyan); margin-bottom: 10px;">
+          <strong style="color: var(--accent-cyan); font-size: 0.88rem; display: block; margin-bottom: 6px;">
+            📌 High-Priority Topics for Your Age:
+          </strong>
+          <ul style="margin: 0 0 0 16px; padding: 0; font-size: 0.84rem; display: flex; flex-direction: column; gap: 4px; color: var(--text-main);">
+            ${tier.topics.map(t => `<li><strong>${t}</strong></li>`).join("")}
+          </ul>
+        </div>
+
+        <div style="background: var(--bg-surface); border-radius: var(--radius-sm); padding: 12px; border-left: 3px solid var(--accent-emerald); margin-bottom: 12px;">
+          <strong style="color: var(--accent-emerald); font-size: 0.88rem; display: block; margin-bottom: 6px;">
+            🚀 Recommended Hands-on Activities:
+          </strong>
+          <ol style="margin: 0 0 0 16px; padding: 0; font-size: 0.84rem; display: flex; flex-direction: column; gap: 4px; color: var(--text-main);">
+            ${tier.activities.map(a => `<li>${a}</li>`).join("")}
+          </ol>
+        </div>
+
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="app.sendQuickAIPrompt('audit')">Run Accessibility Audit</button>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="app.openOnboardingModal()">Adjust Age Bracket</button>
+        </div>
+      `;
+    }
 
     // 1. Accessibility Code Audit
     if (lower.includes("audit") || lower.includes("check") || lower.includes("wcag")) {
@@ -2513,6 +2784,41 @@ class AcclusivoApp {
     }
 
     // 2. NSL Gloss Lookup
+    if (lower.includes("computer")) {
+      return `
+        <strong style="color: var(--accent-cyan); font-size: 1.05rem; display: block; margin-bottom: 8px;">
+          🤟 NSL Sign: Computer
+        </strong>
+        <div style="background: var(--bg-surface); padding: 12px; border-radius: var(--radius-sm); border-left: 3px solid var(--accent-cyan); margin-bottom: 10px;">
+          <strong>NSL Handshape & Movement:</strong>
+          <div style="color: var(--accent-gold); font-weight: bold; margin-top: 4px; font-size: 0.95rem;">
+            [C-HANDSHAPE: FORM 'C' ON FOREARM] ➔ [MOVE UPWARD IN ARC 2X]
+          </div>
+        </div>
+        <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.4;">
+          <strong>Deaf Visual Tip:</strong> Form the letter 'C' with your dominant hand, rest it on your non-dominant forearm, and sweep it upward twice towards the elbow.
+        </p>
+      `;
+    }
+
+    if (lower.includes("api") || lower.includes("database") || lower.includes("server")) {
+      return `
+        <strong style="color: var(--accent-cyan); font-size: 1.05rem; display: block; margin-bottom: 8px;">
+          🤟 NSL Tech Lexicon: API & Database
+        </strong>
+        <div style="background: var(--bg-surface); padding: 12px; border-radius: var(--radius-sm); border-left: 3px solid var(--accent-cyan); margin-bottom: 10px;">
+          <strong>NSL Signing Sequences:</strong>
+          <div style="color: var(--accent-gold); font-weight: bold; margin-top: 4px; font-size: 0.9rem;">
+            • <strong>API:</strong> [FINGER-SPELL: A-P-I] ➔ [TWO HANDS: BRIDGE / CONNECT-DATA]<br>
+            • <strong>DATABASE:</strong> [CYLINDER-STACK: FLAT HANDS HORIZONTAL] ➔ [LAYER-UPWARDS]
+          </div>
+        </div>
+        <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.4;">
+          <strong>Visual Concept:</strong> An API is a visual bridge passing message envelopes between two software houses. A Database is like a stack of organized filing trays.
+        </p>
+      `;
+    }
+
     if (lower.includes("sign") || lower.includes("nsl") || lower.includes("gloss") || lower.includes("event listener")) {
       return `
         <strong style="color: var(--accent-cyan); font-size: 1.05rem; display: block; margin-bottom: 8px;">
@@ -2579,7 +2885,7 @@ class AcclusivoApp {
         ✔ <strong>Step 2:</strong> Test styles in the live preview iframe below.<br>
         ✔ <strong>Step 3:</strong> Remember to include visual alt attributes and submit your work to Facilitator Bashir.
       </div>
-      <button class="btn btn-secondary btn-sm" onclick="app.sendQuickAIPrompt('audit')">Run Instant Code Audit</button>
+      <button type="button" class="btn btn-secondary btn-sm" onclick="app.sendQuickAIPrompt('audit')">Run Instant Code Audit</button>
     `;
   }
 
@@ -2710,6 +3016,519 @@ class AcclusivoApp {
     const labels = { 0.5: "0.5x Slow Hands (Detailed Handshapes)", 0.75: "0.75x Practice Speed", 1.0: "1.0x Real-Time NSL Signing" };
     this.showVisualNotification("NSL Speed Adjusted", labels[rate] || `${rate}x Speed`, "cyan");
   }
+
+  /* ==========================================================================
+     10. DEAF-FIRST ONBOARDING WIZARD & AGE-ADAPTIVE AI ENGINE
+     ========================================================================== */
+  openOnboardingModal() {
+    const modal = document.getElementById("onboardingModal");
+    if (modal) {
+      modal.style.display = "flex";
+      this.state.onboardingStep = this.state.onboardingStep || 1;
+      this.renderOnboardingStepsBar();
+      this.renderOnboardingStepContent();
+      const firstInput = modal.querySelector("input, button");
+      if (firstInput) setTimeout(() => { if (typeof firstInput.focus === "function") firstInput.focus(); }, 100);
+    }
+  }
+
+  closeOnboardingModal() {
+    const modal = document.getElementById("onboardingModal");
+    if (modal) modal.style.display = "none";
+  }
+
+  goToOnboardingStep(stepNumber) {
+    // Capture current input values if transitioning
+    if (this.state.onboardingStep === 1) {
+      const nameInput = document.getElementById("onboardName");
+      if (nameInput && nameInput.value.trim()) {
+        this.state.onboardingProfile.fullName = nameInput.value.trim();
+      }
+    } else if (this.state.onboardingStep === 2) {
+      const ageInput = document.getElementById("onboardExactAge");
+      if (ageInput && ageInput.value) {
+        this.updateExactAge(ageInput.value);
+      }
+    }
+
+    const clamped = Math.max(1, Math.min(4, stepNumber));
+    this.state.onboardingStep = clamped;
+    this.renderOnboardingStepsBar();
+    this.renderOnboardingStepContent();
+  }
+
+  selectOnboardingRole(role) {
+    if (!this.state.onboardingProfile) this.state.onboardingProfile = {};
+    this.state.onboardingProfile.role = role;
+    this.renderOnboardingStepContent();
+  }
+
+  selectOnboardingAge(group) {
+    const tier = AGE_TIERS[group];
+    if (!tier) return;
+    if (!this.state.onboardingProfile) this.state.onboardingProfile = {};
+    this.state.onboardingProfile.ageGroup = group;
+    this.state.onboardingProfile.exactAge = tier.defaultAge;
+    this.state.onboardingProfile.trackName = tier.name;
+    this.state.onboardingProfile.preferredTopics = [...tier.topics];
+    this.state.onboardingProfile.recommendedActivities = [...tier.activities];
+    this.renderOnboardingStepContent();
+  }
+
+  updateExactAge(val) {
+    const age = parseInt(val, 10);
+    if (isNaN(age) || age < 1) return;
+    if (!this.state.onboardingProfile) this.state.onboardingProfile = {};
+    this.state.onboardingProfile.exactAge = age;
+
+    let group = "15-18";
+    if (age <= 14) group = "10-14";
+    else if (age <= 18) group = "15-18";
+    else if (age <= 24) group = "19-24";
+    else group = "25+";
+
+    this.state.onboardingProfile.ageGroup = group;
+    const tier = AGE_TIERS[group];
+    this.state.onboardingProfile.trackName = tier.name;
+    this.state.onboardingProfile.preferredTopics = [...tier.topics];
+    this.state.onboardingProfile.recommendedActivities = [...tier.activities];
+
+    // Smooth DOM update without re-rendering the whole form (preserves cursor & focus)
+    document.querySelectorAll(".age-card-option[data-group]").forEach(card => {
+      const g = card.getAttribute("data-group");
+      const isMatch = g === group;
+      card.classList.toggle("selected", isMatch);
+      card.setAttribute("aria-pressed", isMatch ? "true" : "false");
+    });
+
+    const summaryNote = document.getElementById("ageAdaptationNote");
+    if (summaryNote) {
+      summaryNote.innerHTML = `💡 <strong>AI Adaptation Note:</strong> Age <strong>${age}</strong> automatically maps to the <strong>${tier.name}</strong>. Ami will tailor all coding analogies and prompt chips specifically for this stage.`;
+    }
+  }
+
+  selectCommunicationMode(mode) {
+    if (!this.state.onboardingProfile) this.state.onboardingProfile = {};
+    this.state.onboardingProfile.communicationMode = mode;
+    this.renderOnboardingStepContent();
+  }
+
+  selectSigningLevel(level) {
+    if (!this.state.onboardingProfile) this.state.onboardingProfile = {};
+    this.state.onboardingProfile.signingLevel = level;
+    this.renderOnboardingStepContent();
+  }
+
+  saveOnboardingProfile() {
+    if (!this.state.onboardingProfile) this.state.onboardingProfile = {};
+    const p = this.state.onboardingProfile;
+    p.completed = true;
+    const group = p.ageGroup || "15-18";
+    const tier = AGE_TIERS[group] || AGE_TIERS["15-18"];
+    p.trackName = tier.name;
+    p.preferredTopics = [...tier.topics];
+    p.recommendedActivities = [...tier.activities];
+
+    this.saveState();
+    this.closeOnboardingModal();
+    this.updateOnboardingNavButton();
+
+    if (this.state.activeView === "catalogue") {
+      this.renderCourseCatalogue();
+    }
+
+    this.renderAIQuickChips();
+
+    this.showVisualNotification(
+      "AI Learning Track Configured!",
+      `${p.trackName} active for Age ${p.exactAge || 17}. Topics and activities tailored!`,
+      "emerald"
+    );
+  }
+
+  updateOnboardingNavButton() {
+    const btnLabel = document.getElementById("onboardingBtnLabel");
+    if (btnLabel && this.state.onboardingProfile) {
+      const p = this.state.onboardingProfile;
+      btnLabel.textContent = `AI Track: Age ${p.exactAge || 17}`;
+    }
+  }
+
+  renderOnboardingStepsBar() {
+    const bar = document.getElementById("onboardingStepsBar");
+    if (!bar) return;
+    const current = this.state.onboardingStep || 1;
+    const steps = [
+      { num: 1, label: "Identity & Role" },
+      { num: 2, label: "Age & Track" },
+      { num: 3, label: "NSL Mode" },
+      { num: 4, label: "AI Curriculum Plan" }
+    ];
+    bar.innerHTML = steps.map(s => `
+      <div 
+        class="onboarding-step-pill ${s.num === current ? 'active' : s.num < current ? 'done' : ''}" 
+        onclick="app.goToOnboardingStep(${s.num})" 
+        role="button" 
+        tabindex="0"
+        aria-current="${s.num === current ? 'step' : 'false'}"
+      >
+        <span style="font-weight:700;">${s.num < current ? '✔' : s.num}</span>
+        <span>${s.label}</span>
+      </div>
+    `).join("");
+  }
+
+  renderOnboardingStepContent() {
+    const body = document.getElementById("onboardingBody");
+    const footer = document.getElementById("onboardingFooter");
+    if (!body || !footer) return;
+    const step = this.state.onboardingStep || 1;
+    const profile = this.state.onboardingProfile || {
+      fullName: "Chidiebere Okonkwo",
+      role: "learner",
+      ageGroup: "15-18",
+      exactAge: 17,
+      trackName: "Secondary Launchpad Track",
+      communicationMode: "nsl-first",
+      signingLevel: "fluent",
+      preferredTopics: [],
+      recommendedActivities: []
+    };
+    const tier = AGE_TIERS[profile.ageGroup] || AGE_TIERS["15-18"];
+
+    if (step === 1) {
+      body.innerHTML = `
+        <div style="display:flex; flex-direction:column; gap:20px;">
+          <div style="display:flex; align-items:center; gap:16px; background:linear-gradient(135deg, rgba(0,229,255,0.08), rgba(0,200,150,0.05)); padding:18px 22px; border-radius:var(--radius-md); border:1px solid rgba(0,229,255,0.25);">
+            <div style="width:48px; height:48px; border-radius:50%; background:rgba(0,229,255,0.15); border:1.5px solid var(--accent-cyan); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+              <svg class="ui-icon" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)" stroke-width="2"><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg>
+            </div>
+            <div>
+              <h3 style="color:#fff; margin:0 0 4px; font-size:1.15rem; font-family:var(--font-heading);">Welcome to Acclusivo Onboarding</h3>
+              <p style="margin:0; font-size:0.86rem; color:var(--text-muted); line-height:1.4;">
+                Nigeria's accessible web development platform tailored for Deaf and Hard of Hearing learners with Nigerian Sign Language (NSL) and age-adaptive AI guidance.
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <label for="onboardName" style="display:block; font-weight:700; color:#fff; margin-bottom:6px; font-size:0.92rem;">
+              Learner's Full Name or Nickname:
+            </label>
+            <input 
+              type="text" 
+              id="onboardName" 
+              value="${profile.fullName || ''}" 
+              placeholder="e.g. Chidiebere Okonkwo" 
+              class="ai-input-field" 
+              style="width:100%; font-size:1rem; padding:10px 14px;"
+              oninput="app.state.onboardingProfile.fullName = this.value"
+              aria-label="Learner full name"
+            >
+          </div>
+
+          <div>
+            <label style="display:block; font-weight:700; color:#fff; margin-bottom:8px; font-size:0.92rem;">
+              Who is setting up this learning profile?
+            </label>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px;">
+              <button 
+                type="button" 
+                class="age-card-option ${profile.role === 'learner' ? 'selected' : ''}" 
+                onclick="app.selectOnboardingRole('learner')"
+                style="padding:16px;"
+              >
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span style="font-size:1.3rem;">🤟</span>
+                  <strong style="color:#fff; font-size:0.96rem;">Deaf Learner (Self)</strong>
+                </div>
+                <span style="font-size:0.8rem; color:var(--text-muted); margin-top:4px;">Direct visual coding &amp; interactive NSL lessons</span>
+              </button>
+
+              <button 
+                type="button" 
+                class="age-card-option ${profile.role === 'parent' ? 'selected' : ''}" 
+                onclick="app.selectOnboardingRole('parent')"
+                style="padding:16px;"
+              >
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span style="font-size:1.3rem;">👨‍👩‍👧</span>
+                  <strong style="color:#fff; font-size:0.96rem;">Parent / Guardian</strong>
+                </div>
+                <span style="font-size:0.8rem; color:var(--text-muted); margin-top:4px;">Setting up a tailored tech future for my deaf child</span>
+              </button>
+
+              <button 
+                type="button" 
+                class="age-card-option ${profile.role === 'educator' ? 'selected' : ''}" 
+                onclick="app.selectOnboardingRole('educator')"
+                style="padding:16px;"
+              >
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span style="font-size:1.3rem;">🏫</span>
+                  <strong style="color:#fff; font-size:0.96rem;">Educator / Facilitator</strong>
+                </div>
+                <span style="font-size:0.8rem; color:var(--text-muted); margin-top:4px;">Special education school or inclusive academy</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      footer.innerHTML = `
+        <button type="button" class="btn btn-secondary" onclick="app.closeOnboardingModal()">Skip for Now</button>
+        <button type="button" class="btn btn-primary" onclick="app.goToOnboardingStep(2)">
+          <span>Next: Identify Age &amp; Track</span>
+          <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </button>
+      `;
+    } else if (step === 2) {
+      body.innerHTML = `
+        <div style="display:flex; flex-direction:column; gap:16px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; background:var(--bg-surface); padding:16px 20px; border-radius:var(--radius-md); border:1px solid var(--border-subtle);">
+            <div>
+              <h3 style="color:#fff; margin:0 0 4px; font-size:1.1rem; font-family:var(--font-heading);">Identify Learner Age</h3>
+              <p style="margin:0; font-size:0.84rem; color:var(--text-muted);">
+                Ami AI uses your exact age to push age-appropriate topics, coding analogies, and hands-on activities.
+              </p>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px;">
+              <label for="onboardExactAge" style="font-weight:700; color:var(--accent-cyan); font-size:0.95rem;">Exact Age:</label>
+              <input 
+                type="number" 
+                id="onboardExactAge" 
+                min="8" 
+                max="75" 
+                value="${profile.exactAge || 17}" 
+                oninput="app.updateExactAge(this.value)" 
+                class="ai-input-field" 
+                style="width:85px; font-size:1.3rem; font-weight:800; text-align:center; padding:6px; color:#fff; border-color:var(--accent-cyan);"
+                aria-label="Exact age in years"
+              >
+              <span style="font-size:0.85rem; color:var(--text-muted); font-weight:600;">Years Old</span>
+            </div>
+          </div>
+
+          <!-- 4 Interactive Age Bracket Cards -->
+          <div class="age-card-grid">
+            ${Object.entries(AGE_TIERS).map(([key, t]) => {
+              const isSelected = profile.ageGroup === key;
+              return `
+                <div 
+                  class="age-card-option ${isSelected ? 'selected' : ''}" 
+                  data-group="${key}"
+                  onclick="app.selectOnboardingAge('${key}')"
+                  role="button"
+                  tabindex="0"
+                  aria-pressed="${isSelected}"
+                >
+                  <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span class="age-card-badge" style="background:rgba(${t.badgeColor === 'emerald' ? '16,185,129' : t.badgeColor === 'cyan' ? '0,229,255' : t.badgeColor === 'gold' ? '245,158,11' : '239,68,68'}, 0.2); color:${t.badgeColor === 'emerald' ? '#34d399' : t.badgeColor === 'cyan' ? '#38bdf8' : t.badgeColor === 'gold' ? '#fbbf24' : '#f87171'};">
+                      ${t.badge}
+                    </span>
+                    ${isSelected ? '<span class="badge badge-cyan" style="font-size:0.72rem;">Selected</span>' : ''}
+                  </div>
+                  <strong style="color:#fff; font-size:1.02rem; font-family:var(--font-heading); margin-top:2px;">
+                    ${t.name}
+                  </strong>
+                  <p style="margin:0; font-size:0.82rem; color:var(--text-muted); line-height:1.4;">
+                    ${t.tagline}
+                  </p>
+                  <div style="margin-top:auto; padding-top:8px; border-top:1px solid rgba(255,255,255,0.06);">
+                    <span style="font-size:0.72rem; color:var(--accent-cyan); font-weight:700; text-transform:uppercase;">Sample AI Topics:</span>
+                    <div style="font-size:0.78rem; color:var(--text-dim); margin-top:3px;">
+                      ${t.topics.slice(0, 2).join(" • ")}
+                    </div>
+                  </div>
+                </div>
+              `;
+            }).join("")}
+          </div>
+
+          <div id="ageAdaptationNote" style="background:rgba(0,229,255,0.05); padding:12px 16px; border-radius:var(--radius-sm); border-left:3px solid var(--accent-cyan); font-size:0.84rem; color:var(--text-muted);">
+            💡 <strong>AI Adaptation Note:</strong> Age <strong>${profile.exactAge}</strong> automatically maps to the <strong>${tier.name}</strong>. Ami will tailor all coding analogies and prompt chips specifically for this stage.
+          </div>
+        </div>
+      `;
+
+      footer.innerHTML = `
+        <button type="button" class="btn btn-secondary" onclick="app.goToOnboardingStep(1)">
+          <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+          <span>Back</span>
+        </button>
+        <button type="button" class="btn btn-primary" onclick="app.goToOnboardingStep(3)">
+          <span>Next: NSL Mode</span>
+          <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </button>
+      `;
+    } else if (step === 3) {
+      body.innerHTML = `
+        <div style="display:flex; flex-direction:column; gap:16px;">
+          <div>
+            <h3 style="color:#fff; margin:0 0 4px; font-size:1.1rem; font-family:var(--font-heading);">Deaf Communication &amp; Learning Style</h3>
+            <p style="margin:0; font-size:0.84rem; color:var(--text-muted);">
+              Personalize how Nigerian Sign Language (NSL) videos, visual glosses, and coding notes are delivered.
+            </p>
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            <button 
+              type="button" 
+              class="age-card-option ${profile.communicationMode === 'nsl-first' ? 'selected' : ''}" 
+              onclick="app.selectCommunicationMode('nsl-first')"
+              style="padding:14px;"
+            >
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <strong style="color:#fff; font-size:0.95rem;">🤟 Nigerian Sign Language (NSL) First (Recommended)</strong>
+                <span class="badge badge-emerald">Deaf Primary</span>
+              </div>
+              <span style="font-size:0.82rem; color:var(--text-muted); margin-top:2px;">
+                High-definition NSL sign videos, visual sign movement glosses, tech fingerspelling, and animated demonstrations.
+              </span>
+            </button>
+
+            <button 
+              type="button" 
+              class="age-card-option ${profile.communicationMode === 'bilingual' ? 'selected' : ''}" 
+              onclick="app.selectCommunicationMode('bilingual')"
+              style="padding:14px;"
+            >
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <strong style="color:#fff; font-size:0.95rem;">📖 Bilingual (NSL + Plain English Text)</strong>
+                <span class="badge badge-cyan">Dual Mode</span>
+              </div>
+              <span style="font-size:0.82rem; color:var(--text-muted); margin-top:2px;">
+                Balanced split between video sign explanations and clear step-by-step written English notes.
+              </span>
+            </button>
+
+            <button 
+              type="button" 
+              class="age-card-option ${profile.communicationMode === 'visual-english' ? 'selected' : ''}" 
+              onclick="app.selectCommunicationMode('visual-english')"
+              style="padding:14px;"
+            >
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <strong style="color:#fff; font-size:0.95rem;">🔍 Visual Plain English (Diagrams &amp; High Contrast)</strong>
+                <span class="badge badge-gold">High Readability</span>
+              </div>
+              <span style="font-size:0.82rem; color:var(--text-muted); margin-top:2px;">
+                Heavily visual diagrammatic layout with zero audio cues, high-contrast color frames, and plain-English code walk-throughs.
+              </span>
+            </button>
+          </div>
+
+          <div>
+            <label style="display:block; font-weight:700; color:#fff; margin-bottom:8px; font-size:0.9rem;">
+              NSL Signing Fluency Level:
+            </label>
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+              <button 
+                type="button" 
+                class="nsl-speed-btn ${profile.signingLevel === 'beginner' ? 'active' : ''}" 
+                onclick="app.selectSigningLevel('beginner')"
+                style="flex:1; min-height:42px;"
+              >
+                Beginner (Slow hands, detailed handshapes)
+              </button>
+              <button 
+                type="button" 
+                class="nsl-speed-btn ${profile.signingLevel === 'fluent' ? 'active' : ''}" 
+                onclick="app.selectSigningLevel('fluent')"
+                style="flex:1; min-height:42px;"
+              >
+                Native / Fluent (Standard NSL pacing)
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      footer.innerHTML = `
+        <button type="button" class="btn btn-secondary" onclick="app.goToOnboardingStep(2)">
+          <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+          <span>Back</span>
+        </button>
+        <button type="button" class="btn btn-primary" onclick="app.goToOnboardingStep(4)">
+          <span>Next: View AI Plan</span>
+          <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </button>
+      `;
+    } else if (step === 4) {
+      body.innerHTML = `
+        <div style="display:flex; flex-direction:column; gap:16px;">
+          <div>
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+              <div style="width:32px; height:32px; border-radius:50%; background:rgba(0,229,255,0.15); display:flex; align-items:center; justify-content:center;">
+                <svg class="ui-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></svg>
+              </div>
+              <h3 style="color:#fff; margin:0; font-size:1.15rem; font-family:var(--font-heading);">Ami AI Custom Curriculum Plan</h3>
+              <span class="badge badge-emerald">Ready to Activate</span>
+            </div>
+            <p style="margin:0; font-size:0.84rem; color:var(--text-muted);">
+              Ami has analyzed your age (${profile.exactAge}) and configured this tailored learning plan.
+            </p>
+          </div>
+
+          <div class="ai-plan-box">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
+              <div>
+                <span class="badge badge-${tier.badgeColor}" style="margin-bottom:6px;">${tier.badge}</span>
+                <h4 style="color:#fff; margin:0; font-size:1.12rem; font-family:var(--font-heading);">${tier.name}</h4>
+                <div style="color:var(--accent-cyan); font-size:0.82rem; font-weight:600; margin-top:2px;">
+                  Learner: ${profile.fullName || 'Deaf Learner'} (Age ${profile.exactAge}) • Mode: ${profile.communicationMode === 'nsl-first' ? 'NSL-First' : 'Bilingual'}
+                </div>
+              </div>
+              <div style="background:rgba(0,0,0,0.3); padding:6px 12px; border-radius:var(--radius-sm); border:1px solid rgba(0,229,255,0.3); text-align:right;">
+                <span style="font-size:0.72rem; color:var(--text-muted); display:block;">AI Adaptation Status</span>
+                <strong style="color:#34d399; font-size:0.85rem;">Active &amp; Tailored</strong>
+              </div>
+            </div>
+
+            <!-- Pushed Topics Grid -->
+            <div style="margin-bottom:14px;">
+              <strong style="color:#fff; font-size:0.88rem; display:block; margin-bottom:6px;">
+                🎯 Tailored Topics Pushed to Your Feed:
+              </strong>
+              <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:8px;">
+                ${tier.topics.map(topic => `
+                  <div style="background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.08); border-radius:6px; padding:8px 12px; font-size:0.82rem; color:var(--text-main); display:flex; align-items:center; gap:8px;">
+                    <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span>${topic}</span>
+                  </div>
+                `).join("")}
+              </div>
+            </div>
+
+            <!-- Pushed Hands-On Activities -->
+            <div>
+              <strong style="color:#fff; font-size:0.88rem; display:block; margin-bottom:6px;">
+                🛠️ Recommended Hands-on Activities:
+              </strong>
+              <div style="display:flex; flex-direction:column; gap:6px;">
+                ${tier.activities.map(act => `
+                  <div style="background:rgba(0,229,255,0.06); border-left:3px solid var(--accent-emerald); padding:8px 12px; border-radius:4px; font-size:0.82rem; color:var(--text-main);">
+                    ${act}
+                  </div>
+                `).join("")}
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      footer.innerHTML = `
+        <button type="button" class="btn btn-secondary" onclick="app.goToOnboardingStep(3)">
+          <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+          <span>Back</span>
+        </button>
+        <button type="button" class="btn btn-primary" onclick="app.saveOnboardingProfile()" style="background:var(--accent-emerald); border-color:var(--accent-emerald); color:#080c14; font-weight:700;">
+          <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>Activate &amp; Launch My Track</span>
+        </button>
+      `;
+    }
+  }
 }
 
 // Initialize on page load & expose globally to window.app for inline event handlers
@@ -2727,5 +3546,13 @@ if (typeof document !== "undefined") {
   } else {
     initAcclusivo();
   }
+}
+
+if (typeof global !== "undefined") {
+  global.AcclusivoApp = AcclusivoApp;
+  global.AGE_TIERS = AGE_TIERS;
+}
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = { AcclusivoApp, AGE_TIERS };
 }
 

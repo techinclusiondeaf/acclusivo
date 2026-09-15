@@ -2019,4 +2019,138 @@ body.light-theme .fingerspell-char {
   color: #0284c7;
 }
 
+/* ==========================================================================
+   DEAF-FIRST USER ONBOARDING & AGE-ADAPTIVE AI STYLING
+   ========================================================================== */
+
+.onboarding-card {
+  width: 100%;
+  max-width: 780px !important;
+  border: 2px solid var(--accent-cyan);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.75), 0 0 35px var(--accent-cyan-glow);
+}
+
+.onboarding-steps-bar {
+  display: flex;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 12px 24px;
+  gap: 8px;
+  overflow-x: auto;
+  align-items: center;
+}
+
+.onboarding-step-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  transition: all var(--transition-fast);
+}
+
+.onboarding-step-pill.active {
+  color: var(--accent-cyan);
+  background: rgba(0, 229, 255, 0.12);
+  border-color: rgba(0, 229, 255, 0.4);
+  font-weight: 700;
+}
+
+.onboarding-step-pill.done {
+  color: var(--accent-emerald);
+}
+
+.age-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.age-card-option {
+  background: var(--bg-surface);
+  border: 2px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 18px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: all var(--transition-fast);
+  position: relative;
+  text-align: left;
+}
+
+.age-card-option:hover {
+  border-color: var(--accent-cyan);
+  transform: translateY(-2px);
+  background: rgba(0, 229, 255, 0.04);
+}
+
+.age-card-option.selected {
+  border-color: var(--accent-cyan) !important;
+  background: rgba(0, 229, 255, 0.1) !important;
+  box-shadow: 0 0 24px rgba(0, 229, 255, 0.25);
+}
+
+.age-card-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  text-transform: uppercase;
+}
+
+.ai-plan-box {
+  background: linear-gradient(135deg, rgba(0, 229, 255, 0.1), rgba(0, 168, 132, 0.08));
+  border: 1.5px solid var(--accent-cyan);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  margin-top: 16px;
+}
+
+.ai-personalized-banner {
+  background: linear-gradient(135deg, rgba(0, 229, 255, 0.12), rgba(16, 185, 129, 0.08));
+  border: 1.5px solid var(--accent-cyan);
+  border-radius: var(--radius-md);
+  padding: 14px 20px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+body.light-theme .onboarding-card {
+  background: #ffffff;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+}
+
+body.light-theme .age-card-option {
+  background: #ffffff;
+  border-color: #cbd5e1;
+}
+
+body.light-theme .age-card-option:hover {
+  background: #f0fdfa;
+}
+
+body.light-theme .ai-plan-box {
+  background: #f0fdfa;
+  border-color: #0d9488;
+}
+
+
 
