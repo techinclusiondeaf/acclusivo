@@ -123,6 +123,9 @@ class AcclusivoApp {
     this.state = this.loadState();
     this.videoPlaying = false;
     this.videoPlaybackRate = 1.0;
+    this.guidedTimerHandle = null;
+    this.guidedSecondsLeft = 0;
+    this.currentGuidedNextFn = null;
     this.init();
   }
 
@@ -138,6 +141,7 @@ class AcclusivoApp {
         }
         if (parsed.videoContrastFrame === undefined) parsed.videoContrastFrame = false;
         if (parsed.nslSpeed === undefined) parsed.nslSpeed = 1.0;
+        if (parsed.guidedMode === undefined) parsed.guidedMode = true;
         if (!parsed.onboardingProfile) {
           parsed.onboardingProfile = {
             completed: true,
@@ -167,6 +171,7 @@ class AcclusivoApp {
       highContrast: false,
       videoContrastFrame: false,
       nslSpeed: 1.0,
+      guidedMode: true,
       fontScale: "normal",
       lowDataMode: false,
       onboardingStep: 1,
@@ -203,6 +208,7 @@ class AcclusivoApp {
       highContrast: false,
       videoContrastFrame: false,
       nslSpeed: 1.0,
+      guidedMode: true,
       fontScale: "normal",
       lowDataMode: false,
       onboardingStep: 1,
@@ -225,6 +231,7 @@ class AcclusivoApp {
     this.initA11ySettings();
     this.renderCurrentPersona();
     this.renderCurrentView();
+    this.updateGuidedToggleBtn();
     this.showVisualNotification(
       "Demo Data Reset",
       "Pristine sample data reloaded across all cohorts, learners, and dashboards.",
@@ -238,6 +245,7 @@ class AcclusivoApp {
     this.renderCurrentView();
     this.initA11ySettings();
     this.updateOnboardingNavButton();
+    this.updateGuidedToggleBtn();
   }
 
   // Visual Notification (Deaf-accessible alternative to audio bell with progress bar & perimeter flash)
@@ -516,42 +524,279 @@ class AcclusivoApp {
      Steps: catalogue → lesson → video → activity → quiz → results
      ========================================================================== */
   renderLearnerDashboard() {
+    this.clearGuidedTimer();
     const step = this.state.lessonStep || "catalogue";
     switch (step) {
       case "lesson":   return this.renderLessonPage();
       case "video":    return this.renderVideoStep();
-      case "activity": return this.renderActivityStep();
       case "quiz":     return this.renderQuizStep();
+      case "activity": return this.renderActivityStep();
       case "results":  return this.renderResultsStep();
       default:         return this.renderCourseCatalogue();
     }
   }
 
-  // ── Step helpers ────────────────────────────────────────────────────────────
+  // ── Step helpers & Guided Autopilot Controller ─────────────────────────────
   goToStep(step, modId) {
-    if (modId) this.state.lessonModuleId = modId;
+    this.clearGuidedTimer();
+    if (modId) {
+      this.state.lessonModuleId = modId;
+      this.state.activeModuleId = modId;
+    }
     this.state.lessonStep = step;
     this.saveState();
     this.renderLearnerDashboard();
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    if (typeof window !== "undefined" && typeof window.scrollTo === "function") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }
+
+  clearGuidedTimer() {
+    if (this.guidedTimerHandle) {
+      clearInterval(this.guidedTimerHandle);
+      this.guidedTimerHandle = null;
+    }
+    this.guidedSecondsLeft = 0;
+    this.currentGuidedNextFn = null;
+  }
+
+  toggleGuidedMode() {
+    this.state.guidedMode = !this.state.guidedMode;
+    this.saveState();
+    this.updateGuidedToggleBtn();
+    if (!this.state.guidedMode) {
+      this.clearGuidedTimer();
+      const banner = document.getElementById("guidedActionBanner") || 
+                     document.getElementById("homeGuidedBanner") || 
+                     document.getElementById("videoGuidedBanner") || 
+                     document.getElementById("quizGuidedBanner") || 
+                     document.getElementById("activityGuidedBanner") || 
+                     document.getElementById("resultsGuidedBanner");
+      if (banner) banner.style.display = "none";
+      this.showVisualNotification(
+        "Autopilot Paused ⏸",
+        "Guided mode disabled. You can navigate lessons manually at your own pace.",
+        "gold"
+      );
+    } else {
+      this.showVisualNotification(
+        "Autopilot Active 🚀",
+        "Zero-confusion automatic flow enabled! We will guide you from step to step.",
+        "cyan"
+      );
+      this.renderLearnerDashboard();
+    }
+  }
+
+  updateGuidedToggleBtn() {
+    const btn = document.getElementById("guidedModeToggle");
+    if (!btn) return;
+    const isGuided = this.state.guidedMode !== false;
+    btn.className = isGuided ? "a11y-btn highlight-btn" : "a11y-btn";
+    btn.setAttribute("aria-pressed", isGuided ? "true" : "false");
+    btn.innerHTML = `
+      <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+      <span>${isGuided ? '<span class="guided-pulse-dot" style="display:inline-block;margin-right:4px;"></span>Autopilot: ON' : 'Autopilot: OFF'}</span>
+    `;
+  }
+
+  pauseGuidedAutopilot() {
+    if (this.guidedTimerHandle) {
+      clearInterval(this.guidedTimerHandle);
+      this.guidedTimerHandle = null;
+      const pauseBtn = document.getElementById("guidedPauseBtn");
+      if (pauseBtn) {
+        pauseBtn.innerHTML = `
+          <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          <span>Resume</span>
+        `;
+        pauseBtn.setAttribute("onclick", "app.resumeGuidedAutopilot()");
+      }
+      this.showVisualNotification("Timer Paused", "Take your time. Click Resume whenever you are ready.", "gold");
+    }
+  }
+
+  resumeGuidedAutopilot() {
+    if (this.currentGuidedNextFn && this.guidedSecondsLeft > 0) {
+      const fn = this.currentGuidedNextFn;
+      const secs = this.guidedSecondsLeft;
+      const prompt = this.currentGuidedPrompt || "Auto-advancing in";
+      const targetId = this.currentGuidedTargetId || "guidedActionBanner";
+      this.autoAdvanceCountdown(secs, fn, prompt, targetId);
+      this.showVisualNotification("Timer Resumed", "Continuing your guided learning journey.", "cyan");
+    }
+  }
+
+  triggerGuidedNextNow() {
+    const fn = this.currentGuidedNextFn;
+    this.clearGuidedTimer();
+    if (typeof fn === "function") {
+      fn();
+    }
+  }
+
+  autoAdvanceCountdown(seconds, nextFn, promptText, containerId = "guidedActionBanner") {
+    if (this.state.guidedMode === false) return;
+    this.clearGuidedTimer();
+    this.guidedSecondsLeft = seconds;
+    const totalSeconds = seconds;
+    this.currentGuidedNextFn = nextFn;
+    this.currentGuidedPrompt = promptText;
+    this.currentGuidedTargetId = containerId;
+
+    const banner = document.getElementById(containerId);
+    if (!banner) return;
+
+    banner.style.display = "flex";
+    const updateUI = () => {
+      const bannerEl = document.getElementById(containerId);
+      if (!bannerEl) return;
+      const pct = Math.max(0, Math.min(100, Math.round((this.guidedSecondsLeft / totalSeconds) * 100)));
+      bannerEl.innerHTML = `
+        <div style="flex:1;min-width:220px;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap;">
+            <span class="guided-pulse-badge">
+              <span class="guided-pulse-dot"></span>
+              Autopilot Next Step
+            </span>
+            <span style="color:#fff;font-weight:700;font-size:0.95rem;">${promptText} <strong style="color:var(--accent-cyan);">${this.guidedSecondsLeft}s</strong></span>
+          </div>
+          <div class="guided-countdown-track" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100">
+            <div class="guided-countdown-fill" style="width:${pct}%;"></div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <button id="guidedPauseBtn" class="nsl-tool-btn" onclick="app.pauseGuidedAutopilot()" title="Pause countdown to take extra time">
+            <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+            <span>Pause</span>
+          </button>
+          <button class="nsl-tool-btn" style="background:var(--accent-cyan);color:#080c14;border-color:var(--accent-cyan);font-weight:700;" onclick="app.triggerGuidedNextNow()" title="Skip countdown and proceed immediately">
+            <span>Proceed Now</span>
+            <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+      `;
+    };
+
+    updateUI();
+
+    this.guidedTimerHandle = setInterval(() => {
+      this.guidedSecondsLeft -= 1;
+      if (this.guidedSecondsLeft <= 0) {
+        this.clearGuidedTimer();
+        if (typeof nextFn === "function") {
+          nextFn();
+        }
+      } else {
+        updateUI();
+      }
+    }, 1000);
+  }
+
+  _guidedHUD(currentKey, stepIndex, nextTitle, onProceedFn) {
+    if (this.state.guidedMode === false) return "";
+    return `
+      <div class="guided-hud-bar" role="region" aria-label="Guided Autopilot Status">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+          <span class="guided-pulse-badge">
+            <span class="guided-pulse-dot"></span>
+            Autopilot Active
+          </span>
+          <span style="color:#fff;font-size:0.88rem;font-weight:600;">
+            Step ${stepIndex} of 4: <strong style="color:var(--accent-cyan);">${currentKey}</strong>
+          </span>
+          ${nextTitle ? `<span style="color:var(--text-muted);font-size:0.82rem;">➔ Next: <strong style="color:var(--accent-emerald);">${nextTitle}</strong></span>` : ''}
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          ${onProceedFn ? `
+            <button class="btn btn-primary btn-sm" onclick="${onProceedFn}" style="min-height:32px;padding:4px 14px;font-size:0.82rem;" title="Advance to next step without waiting">
+              <span>Next Step ›</span>
+            </button>
+          ` : ''}
+          <button class="nsl-tool-btn" onclick="app.toggleGuidedMode()" style="font-size:0.75rem;padding:4px 10px;" title="Switch to manual navigation">
+            <span>Disable Autopilot</span>
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  startGuidedJourney(modId) {
+    this.clearGuidedTimer();
+    const targetModId = modId || this.state.lessonModuleId || "mod-2";
+    this.state.lessonModuleId = targetModId;
+    this.state.activeModuleId = targetModId;
+    this.goToStep("video", targetModId);
+    this.showVisualNotification(
+      "Autopilot: Step 1 of 4 🎬",
+      "Welcome to Nigerian Sign Language (NSL) Video Lesson!",
+      "cyan"
+    );
+  }
+
+  autoAdvanceToQuiz() {
+    this.clearGuidedTimer();
+    this.goToStep("quiz");
+    this.showVisualNotification(
+      "Autopilot: Step 2 of 4 ❓",
+      "Proceeding to Visual Quiz! Pick your answers for instant feedback.",
+      "cyan"
+    );
+  }
+
+  autoAdvanceToActivity() {
+    this.clearGuidedTimer();
+    this.goToStep("activity");
+    this.showVisualNotification(
+      "Autopilot: Step 3 of 4 💻",
+      "Proceeding to Hands-On Coding Activity! Build and inspect your code.",
+      "emerald"
+    );
+  }
+
+  autoAdvanceToResults() {
+    this.clearGuidedTimer();
+    this.finishQuiz();
+    this.showVisualNotification(
+      "Autopilot: Step 4 of 4 🏆",
+      "Generating your visual achievement certificate and performance score!",
+      "gold"
+    );
+  }
+
+  startNextGuidedModule() {
+    this.clearGuidedTimer();
+    const course = this.state.data.course;
+    const currentId = this.state.activeModuleId || "mod-2";
+    const currentIndex = course.modules.findIndex(m => m.id === currentId);
+    const nextMod = course.modules[currentIndex + 1];
+    if (nextMod) {
+      this.startGuidedJourney(nextMod.id);
+    } else {
+      this.goToStep("catalogue");
+      this.showVisualNotification(
+        "Course Complete! 🎓",
+        "Congratulations! You have finished all modules in this course track!",
+        "emerald"
+      );
+    }
   }
 
   _stepBreadcrumb(activeStep) {
     const steps = [
-      { key: "catalogue", label: "Courses", icon: `<svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>` },
-      { key: "lesson",    label: "Lesson", icon: `<svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>` },
-      { key: "video",     label: "NSL Video", icon: `<svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/></svg>` },
-      { key: "activity",  label: "Activity", icon: `<svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>` },
-      { key: "quiz",      label: "Quiz", icon: `<svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>` },
-      { key: "results",   label: "Results", icon: `<svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>` }
+      { key: "catalogue", label: "Home", icon: `<svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>` },
+      { key: "video",     label: "1. NSL Video", icon: `<svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/></svg>` },
+      { key: "quiz",      label: "2. Visual Quiz", icon: `<svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>` },
+      { key: "activity",  label: "3. Code Activity", icon: `<svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>` },
+      { key: "results",   label: "4. Results", icon: `<svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>` }
     ];
     const activeIdx = steps.findIndex(s => s.key === activeStep);
     return `
       <nav aria-label="Learning Journey Progress" style="margin-bottom:28px;">
         <ol style="display:flex;flex-wrap:wrap;gap:8px;list-style:none;padding:0;margin:0;align-items:center;">
           ${steps.map((s, i) => {
-            const done   = i < activeIdx;
-            const active = i === activeIdx;
+            const done   = activeIdx !== -1 && i < activeIdx;
+            const active = s.key === activeStep;
             return `
               <li style="display:flex;align-items:center;gap:6px;">
                 <button
@@ -579,7 +824,7 @@ class AcclusivoApp {
     `;
   }
 
-  // ── STEP 0: Course Catalogue ─────────────────────────────────────────────
+  // ── STEP 0: Course Catalogue with NSL Welcome Hero ────────────────────────
   renderCourseCatalogue() {
     const container = document.getElementById("view-learner");
     if (!container) return;
@@ -596,27 +841,37 @@ class AcclusivoApp {
     container.innerHTML = `
       ${this._stepBreadcrumb("catalogue")}
 
-      <!-- Learner Welcome Banner -->
-      <div style="background:linear-gradient(135deg,rgba(0,229,255,.12),rgba(0,200,150,.08));border:1px solid rgba(0,229,255,.25);border-radius:var(--radius-lg);padding:28px;margin-bottom:24px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
-        <div style="font-size:3rem;line-height:1;">🤟</div>
-        <div style="flex:1;min-width:220px;">
-          <h2 style="color:#fff;margin:0 0 4px;font-size:1.5rem;">
-            Welcome back, ${learner.name}!
-          </h2>
-          <p style="color:var(--text-muted);margin:0;font-size:.93rem;">
-            You are ${learner.progressPercent}% through your journey. Keep going — your next lesson is waiting! 💪
-          </p>
-        </div>
-        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
-          <div style="text-align:center;">
-            <div style="font-size:1.7rem;font-weight:800;color:var(--accent-cyan);">${learner.progressPercent}%</div>
-            <div style="font-size:.75rem;color:var(--text-muted);">Complete</div>
+      <!-- NSL Local Welcome & Autopilot Hero -->
+      <div class="nsl-welcome-hero">
+        <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+          <div style="width:68px;height:68px;border-radius:50%;background:rgba(0,229,255,0.15);border:2px solid var(--accent-cyan);display:flex;align-items:center;justify-content:center;font-size:2.2rem;flex-shrink:0;">
+            🤟
           </div>
-          <div style="text-align:center;">
-            <div style="font-size:1.7rem;font-weight:800;color:var(--accent-gold);">🏆</div>
-            <div style="font-size:.75rem;color:var(--text-muted);">On Track</div>
+          <div style="flex:1;min-width:260px;">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px;">
+              <span class="badge badge-cyan">🇳🇬 Nigerian Sign Language (NSL)</span>
+              <span class="badge badge-emerald">Deaf-First Autopilot</span>
+            </div>
+            <h2 style="color:#fff;margin:0 0 6px;font-size:1.45rem;font-family:var(--font-heading);">
+              Sannu / Nnọọ / Bawo! Welcome, ${learner.name}!
+            </h2>
+            <p style="color:var(--text-muted);margin:0;font-size:0.9rem;line-height:1.5;">
+              Lead Facilitator <strong>Bashir Abubakar</strong> welcomes you. With <strong>Autopilot Mode</strong>, you don't need to click every button or wonder where to go next. We automatically guide you from the <strong>NSL Video</strong> ➔ <strong>Visual Quiz</strong> ➔ <strong>Code Activity</strong> ➔ <strong>Results</strong>!
+            </p>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;">
+            <button
+              class="btn btn-primary"
+              style="padding:12px 20px;font-size:0.95rem;font-weight:700;"
+              onclick="app.startGuidedJourney('${this.state.lessonModuleId || 'mod-2'}')"
+            >
+              <span>▶ Start Guided Journey</span>
+            </button>
           </div>
         </div>
+
+        <!-- Autopilot countdown banner on home page -->
+        <div id="homeGuidedBanner" class="guided-action-banner" style="margin-top:20px;margin-bottom:0;"></div>
       </div>
 
       <!-- AI Personalized Learning Track Banner (Age-Adaptive Engine) -->
@@ -644,9 +899,9 @@ class AcclusivoApp {
 
       <!-- Section Header -->
       <div style="margin-bottom:20px;">
-        <h2 style="color:#fff;margin:0 0 4px;font-size:1.25rem;">📚 Featured Course</h2>
+        <h2 style="color:#fff;margin:0 0 4px;font-size:1.25rem;">📚 Featured Course Modules</h2>
         <p style="color:var(--text-muted);margin:0;font-size:.88rem;">
-          Tap a module below to begin your lesson → watch the NSL sign language video → do the activity → take the quiz
+          Select any module below or let Autopilot advance you automatically into lesson 1:
         </p>
       </div>
 
@@ -660,7 +915,7 @@ class AcclusivoApp {
           <h3 style="color:#fff;margin:14px 0 6px;font-size:1.35rem;font-family:var(--font-heading);">${course.title}</h3>
           <p style="color:#94a3b8;margin:0;font-size:.9rem;max-width:680px;line-height:1.6;">${course.description}</p>
           <div style="margin-top:14px;font-size:.82rem;color:var(--accent-cyan);font-weight:600;">
-            🛤️ NSL Video → Visual Demo → Simple Explanation → Activity → Quiz → Certificate
+            🛤️ Automated Loop: 1. NSL Video ➔ 2. Visual Quiz ➔ 3. Code Activity ➔ 4. Results
           </div>
         </div>
 
@@ -668,14 +923,14 @@ class AcclusivoApp {
         <div style="padding:20px 28px;display:flex;flex-direction:column;gap:12px;">
           ${course.modules.map(mod => {
             const isCompleted = learner.completedModules.includes(mod.id);
-            const isActive    = mod.id === this.state.lessonModuleId || (!this.state.lessonModuleId && mod.id === "mod-3");
+            const isActive    = mod.id === this.state.lessonModuleId || (!this.state.lessonModuleId && mod.id === "mod-2");
             const isLocked    = mod.status === "locked" && !isCompleted;
 
             return `
               <div
                 class="module-journey-card ${isLocked ? 'locked' : ''}"
                 id="jcard-${mod.id}"
-                onclick="${isLocked ? 'app.showVisualNotification(\"Module Locked\",\"Complete the previous module first!\",\"gold\")' : `app.startLesson('${mod.id}')`}"
+                onclick="${isLocked ? 'app.showVisualNotification(\"Module Locked\",\"Complete the previous module first!\",\"gold\")' : `app.startGuidedJourney('${mod.id}')`}"
                 style="
                   display:flex;align-items:center;gap:16px;
                   background:${isActive ? 'rgba(0,229,255,.08)' : 'var(--bg-surface)'};
@@ -718,26 +973,40 @@ class AcclusivoApp {
         </div>
       </div>
     `;
+
+    // Auto-advance countdown on home page if in guidedMode
+    if (this.state.guidedMode !== false) {
+      setTimeout(() => {
+        this.autoAdvanceCountdown(
+          6,
+          () => this.startGuidedJourney(this.state.lessonModuleId || "mod-2"),
+          "Auto-directing to Nigerian Sign Language Video in",
+          "homeGuidedBanner"
+        );
+      }, 300);
+    }
   }
 
   startLesson(modId) {
-    this.state.activeModuleId = modId;
-    this.goToStep("lesson", modId);
-    this.showVisualNotification("Lesson Started!", "Let's go — watch the NSL video, then complete the activity and quiz.", "cyan");
+    this.startGuidedJourney(modId);
   }
 
-  // ── STEP 1: Lesson Overview Page ─────────────────────────────────────────
+  // ── STEP 1 (Legacy/Deep Overview): Lesson Page ───────────────────────────
   renderLessonPage() {
     const container = document.getElementById("view-learner");
     if (!container) return;
     const course  = this.state.data.course;
     const mod     = course.modules.find(m => m.id === this.state.activeModuleId) || course.modules[2];
-    const learner = this.state.data.learners.find(l => l.id === this.state.activeLearnerId) || this.state.data.learners[0];
 
     container.innerHTML = `
       ${this._stepBreadcrumb("lesson")}
 
       <div style="max-width:760px;margin:0 auto;">
+        ${this._guidedHUD("Lesson Overview", 1, "NSL Video Lesson", "app.goToStep('video')")}
+
+        <!-- Guided Action Banner -->
+        <div id="lessonGuidedBanner" class="guided-action-banner" style="margin-bottom:20px;"></div>
+
         <!-- Lesson Header -->
         <div style="background:linear-gradient(135deg,rgba(0,229,255,.1),rgba(0,200,150,.06));border:1px solid rgba(0,229,255,.25);border-radius:var(--radius-lg);padding:28px;margin-bottom:24px;">
           <span class="badge badge-cyan" style="margin-bottom:10px;display:inline-block;">Module ${mod.number}</span>
@@ -788,8 +1057,6 @@ class AcclusivoApp {
             transition:transform .2s,box-shadow .2s;
             box-shadow:0 4px 20px rgba(0,229,255,.35);
           "
-          onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 30px rgba(0,229,255,.5)';"
-          onmouseout="this.style.transform='';this.style.boxShadow='0 4px 20px rgba(0,229,255,.35)';"
         >
           <span style="font-size:1.5rem;">🎬</span>
           Watch Nigerian Sign Language Video
@@ -797,17 +1064,26 @@ class AcclusivoApp {
         </button>
       </div>
     `;
+
+    if (this.state.guidedMode !== false) {
+      setTimeout(() => {
+        this.autoAdvanceCountdown(
+          4,
+          () => this.goToStep("video"),
+          "Autopilot active: Starting NSL Video in",
+          "lessonGuidedBanner"
+        );
+      }, 300);
+    }
   }
 
-  // ── STEP 2: NSL Video (YouTube embed) ──────────────────────────────────────
-  // ── STEP 2: NSL Video (Deaf-First Enhanced Video Suite) ──────────────────────
+  // ── STEP 1: NSL Video (Deaf-First Enhanced Video Suite) ──────────────────────
   renderVideoStep() {
     const container = document.getElementById("view-learner");
     if (!container) return;
     const course  = this.state.data.course;
     const mod     = course.modules.find(m => m.id === this.state.activeModuleId) || course.modules[2];
 
-    // YouTube video ID from https://youtu.be/7lM2qS2XEPk
     const ytVideoId  = "7lM2qS2XEPk";
     const ytEmbedUrl = `https://www.youtube.com/embed/${ytVideoId}?enablejsapi=1&rel=0&modestbranding=1&cc_load_policy=1`;
 
@@ -815,6 +1091,8 @@ class AcclusivoApp {
       ${this._stepBreadcrumb("video")}
 
       <div style="max-width:880px;margin:0 auto;">
+        ${this._guidedHUD("1. Nigerian Sign Language Video", 1, "2. Visual Quiz", "app.autoAdvanceToQuiz()")}
+
         <!-- Header -->
         <div style="margin-bottom:18px;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;">
           <div>
@@ -822,7 +1100,7 @@ class AcclusivoApp {
               <svg class="ui-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/></svg>
               <span>Nigerian Sign Language (NSL) Video Lesson</span>
             </h2>
-            <p style="color:var(--text-muted);margin:0;font-size:.88rem;">Module ${mod.number}: ${mod.title} • ${mod.videoDuration} • Full Visual Demonstration</p>
+            <p style="color:var(--text-muted);margin:0;font-size:.88rem;">Module ${mod.number}: ${mod.title} • ${mod.videoDuration} • Visual Sign Demonstration</p>
           </div>
           <button onclick="app.openNSLDictionaryModal()" class="nsl-tool-btn" style="border-color:var(--accent-cyan);color:var(--accent-cyan);" title="Look up NSL signs and fingerspelling">
             <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
@@ -854,8 +1132,7 @@ class AcclusivoApp {
         </div>
 
         <!-- YouTube Video Embed with High-Contrast Frame Support -->
-        <div id="nslVideoBox" class="nsl-video-box ${this.state.videoContrastFrame ? 'high-contrast-frame' : ''}" style="margin-bottom:24px;">
-          <!-- 16:9 Aspect Ratio Wrapper -->
+        <div id="nslVideoBox" class="nsl-video-box ${this.state.videoContrastFrame ? 'high-contrast-frame' : ''}" style="margin-bottom:20px;">
           <div style="position:relative;padding-top:56.25%;width:100%;">
             <iframe
               id="nslVideoFrame"
@@ -880,6 +1157,9 @@ class AcclusivoApp {
             <span>Nigerian Sign Language (NSL)</span>
           </div>
         </div>
+
+        <!-- Guided Action Banner below video -->
+        <div id="videoGuidedBanner" class="guided-action-banner" style="margin-bottom:24px;"></div>
 
         <!-- Deaf-First Handshape & Concept Breakdown Cards -->
         <div style="margin-bottom:24px;">
@@ -924,43 +1204,18 @@ class AcclusivoApp {
           </div>
         </div>
 
-        <!-- Tips row -->
-        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:28px;">
-          <div style="background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.25);border-radius:var(--radius-md);padding:12px 16px;flex:1;min-width:160px;">
-            <div style="font-size:.8rem;color:#a78bfa;font-weight:700;margin-bottom:2px;display:flex;align-items:center;gap:5px;">
-              <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-              <span>Signing Clarity</span>
-            </div>
-            <div style="font-size:.82rem;color:#e2e8f0;">Fullscreen maximizes handshape and facial cue resolution</div>
-          </div>
-          <div style="background:rgba(0,229,255,.08);border:1px solid rgba(0,229,255,.2);border-radius:var(--radius-md);padding:12px 16px;flex:1;min-width:160px;">
-            <div style="font-size:.8rem;color:var(--accent-cyan);font-weight:700;margin-bottom:2px;display:flex;align-items:center;gap:5px;">
-              <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
-              <span>Subtitles</span>
-            </div>
-            <div style="font-size:.82rem;color:#e2e8f0;">Turn on CC in YouTube controls for synchronized captions</div>
-          </div>
-          <div style="background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.2);border-radius:var(--radius-md);padding:12px 16px;flex:1;min-width:160px;">
-            <div style="font-size:.8rem;color:var(--accent-emerald);font-weight:700;margin-bottom:2px;display:flex;align-items:center;gap:5px;">
-              <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6"/><path d="M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
-              <span>No Pressure</span>
-            </div>
-            <div style="font-size:.82rem;color:#e2e8f0;">Pause or slow down at any point to practice handshapes</div>
-          </div>
-        </div>
-
-        <!-- Navigation Buttons with SVGs -->
+        <!-- Navigation Buttons -->
         <div style="display:flex;gap:12px;flex-wrap:wrap;">
           <button
-            onclick="app.goToStep('lesson')"
+            onclick="app.goToStep('catalogue')"
             style="flex:1;min-width:140px;padding:14px;border-radius:var(--radius-md);background:var(--bg-surface);border:1px solid var(--border-subtle);color:#fff;cursor:pointer;font-size:.95rem;font-family:inherit;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:all .2s;"
           >
             <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-            <span>Back to Lesson</span>
+            <span>Home</span>
           </button>
           <button
             id="doneVideoBtn"
-            onclick="app.goToStep('activity')"
+            onclick="app.autoAdvanceToQuiz()"
             style="
               flex:2;min-width:200px;padding:14px;border-radius:var(--radius-md);
               background:linear-gradient(135deg,var(--accent-cyan),var(--accent-emerald));
@@ -968,16 +1223,85 @@ class AcclusivoApp {
               font-family:var(--font-heading);display:inline-flex;align-items:center;justify-content:center;gap:8px;
               transition:transform .2s;box-shadow:0 4px 20px rgba(0,229,255,0.3);
             "
-            onmouseover="this.style.transform='translateY(-2px)';"
-            onmouseout="this.style.transform='';" 
           >
             <svg class="ui-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#080c14" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-            <span>Done Watching — Proceed to Hands-On Activity</span>
+            <span>Done Watching — Proceed to Visual Quiz</span>
             <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#080c14" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
           </button>
         </div>
       </div>
     `;
+
+    if (this.state.guidedMode !== false) {
+      setTimeout(() => {
+        this.autoAdvanceCountdown(
+          14,
+          () => this.autoAdvanceToQuiz(),
+          "Video preview active. Auto-advancing to Visual Quiz in",
+          "videoGuidedBanner"
+        );
+      }, 500);
+    }
+  }
+
+  // ── STEP 2: Visual Quiz ───────────────────────────────────────────────────
+  renderQuizStep() {
+    const container = document.getElementById("view-learner");
+    if (!container) return;
+    const course  = this.state.data.course;
+    const mod     = course.modules.find(m => m.id === this.state.activeModuleId) || course.modules[2];
+
+    container.innerHTML = `
+      ${this._stepBreadcrumb("quiz")}
+
+      <div style="max-width:760px;margin:0 auto;">
+        ${this._guidedHUD("2. Visual Quiz", 2, "3. Code Activity", "app.autoAdvanceToActivity()")}
+
+        <!-- Autopilot countdown banner on quiz complete -->
+        <div id="quizGuidedBanner" class="guided-action-banner" style="display:none;margin-bottom:20px;"></div>
+
+        <div style="margin-bottom:20px;">
+          <h2 style="color:#fff;margin:0 0 4px;font-size:1.25rem;">❓ Module Visual Quiz</h2>
+          <p style="color:var(--text-muted);margin:0;font-size:.88rem;">Module ${mod.number}: Answer the questions below — instant visual feedback after each selection!</p>
+        </div>
+
+        <div class="quiz-container" id="quizContainer">
+          ${this.renderQuizHTML(mod)}
+        </div>
+
+        <!-- Navigation buttons -->
+        <div style="margin-top:24px;display:flex;gap:12px;flex-wrap:wrap;">
+          <button onclick="app.goToStep('video')" style="flex:1;min-width:140px;padding:14px;border-radius:var(--radius-md);background:var(--bg-surface);border:1px solid var(--border-subtle);color:#fff;cursor:pointer;font-size:.95rem;font-family:inherit;">
+            ← Re-watch Video
+          </button>
+          <button
+            id="proceedToActivityBtn"
+            onclick="app.autoAdvanceToActivity()"
+            style="
+              flex:2;min-width:200px;padding:14px;border-radius:var(--radius-md);
+              background:linear-gradient(135deg,var(--accent-cyan),var(--accent-emerald));
+              border:none;color:#080c14;cursor:pointer;font-size:1rem;font-weight:700;
+              font-family:var(--font-heading);
+            "
+          >
+            💻 Proceed to Hands-On Activity ›
+          </button>
+        </div>
+      </div>
+    `;
+
+    // Check if already answered all questions to auto-countdown
+    const allAnswered = mod.quiz.every(q => this.state.quizAnswers[`${mod.id}-${q.id}`] !== undefined);
+    if (allAnswered && this.state.guidedMode !== false) {
+      setTimeout(() => {
+        this.autoAdvanceCountdown(
+          5,
+          () => this.autoAdvanceToActivity(),
+          "All questions answered! Auto-advancing to Hands-On Coding Activity in",
+          "quizGuidedBanner"
+        );
+      }, 300);
+    }
   }
 
   // ── STEP 3: Activity (Code Playground) ───────────────────────────────────
@@ -991,6 +1315,11 @@ class AcclusivoApp {
       ${this._stepBreadcrumb("activity")}
 
       <div style="max-width:1100px;margin:0 auto;">
+        ${this._guidedHUD("3. Hands-On Code Activity", 3, "4. Results", "app.autoAdvanceToResults()")}
+
+        <!-- Autopilot countdown banner on submission -->
+        <div id="activityGuidedBanner" class="guided-action-banner" style="display:none;margin-bottom:20px;"></div>
+
         <!-- Header -->
         <div style="margin-bottom:20px;">
           <h2 style="color:#fff;margin:0 0 4px;font-size:1.25rem;">💻 Hands-On Activity</h2>
@@ -1041,8 +1370,8 @@ class AcclusivoApp {
             <span style="color:var(--text-muted);font-size:.82rem;">${mod.task.gradingRubric}</span>
           </div>
           <div style="display:flex;gap:10px;flex-wrap:wrap;">
-            <button class="btn btn-secondary btn-sm" onclick="app.goToStep('video')">← Re-watch Video</button>
-            <button class="btn btn-primary btn-sm" onclick="app.submitAndContinue('${mod.id}')">Submit Work &amp; Go to Quiz ›</button>
+            <button class="btn btn-secondary btn-sm" onclick="app.goToStep('quiz')">← Back to Quiz</button>
+            <button class="btn btn-primary btn-sm" onclick="app.submitAndContinue('${mod.id}')">Submit Work &amp; View Results ›</button>
           </div>
         </div>
       </div>
@@ -1057,57 +1386,27 @@ class AcclusivoApp {
     const learner = this.state.data.learners.find(l => l.id === this.state.activeLearnerId) || this.state.data.learners[0];
     learner.assignments[modId] = { status: "submitted", code, submittedAt: new Date().toLocaleTimeString() };
     this.saveState();
-    this.showVisualNotification("Activity Submitted! 🚀", "Great work! Now take the quiz to complete this module.", "emerald");
-    this.goToStep("quiz");
-  }
+    this.showVisualNotification("Activity Submitted! 🚀", "Code verified! Ready for grading.", "emerald");
 
-  // ── STEP 4: Quiz ────────────────────────────────────────────────────────
-  renderQuizStep() {
-    const container = document.getElementById("view-learner");
-    if (!container) return;
-    const course  = this.state.data.course;
-    const mod     = course.modules.find(m => m.id === this.state.activeModuleId) || course.modules[2];
-
-    container.innerHTML = `
-      ${this._stepBreadcrumb("quiz")}
-
-      <div style="max-width:760px;margin:0 auto;">
-        <div style="margin-bottom:20px;">
-          <h2 style="color:#fff;margin:0 0 4px;font-size:1.25rem;">❓ Module Quiz</h2>
-          <p style="color:var(--text-muted);margin:0;font-size:.88rem;">Answer all ${mod.quiz.length} questions — instant visual feedback after each answer</p>
-        </div>
-
-        <div class="quiz-container" id="quizContainer">
-          ${this.renderQuizHTML(mod)}
-        </div>
-
-        <!-- Check results button -->
-        <div style="margin-top:24px;display:flex;gap:12px;flex-wrap:wrap;">
-          <button onclick="app.goToStep('activity')" style="flex:1;min-width:140px;padding:14px;border-radius:var(--radius-md);background:var(--bg-surface);border:1px solid var(--border-subtle);color:#fff;cursor:pointer;font-size:.95rem;font-family:inherit;">← Back to Activity</button>
-          <button
-            id="seeResultsBtn"
-            onclick="app.finishQuiz()"
-            style="
-              flex:2;min-width:200px;padding:14px;border-radius:var(--radius-md);
-              background:linear-gradient(135deg,var(--accent-gold),#f59e0b);
-              border:none;color:#080c14;cursor:pointer;font-size:1rem;font-weight:700;
-              font-family:var(--font-heading);
-            "
-          >🏆 See My Results ›</button>
-        </div>
-      </div>
-    `;
+    if (this.state.guidedMode !== false) {
+      this.autoAdvanceCountdown(
+        3,
+        () => this.autoAdvanceToResults(),
+        "Activity submitted! Auto-calculating your performance score in",
+        "activityGuidedBanner"
+      );
+    } else {
+      this.autoAdvanceToResults();
+    }
   }
 
   finishQuiz() {
     const course = this.state.data.course;
     const mod    = course.modules.find(m => m.id === this.state.activeModuleId) || course.modules[2];
-    // Count correct answers
     const correct = mod.quiz.filter(q => this.state.quizAnswers[`${mod.id}-${q.id}`] === q.correctIndex).length;
     const total   = mod.quiz.length;
-    const pct     = Math.round((correct / total) * 100);
+    const pct     = total > 0 ? Math.round((correct / total) * 100) : 80;
 
-    // Mark module complete if ≥ 70%
     const learner = this.state.data.learners.find(l => l.id === this.state.activeLearnerId) || this.state.data.learners[0];
     if (pct >= 70 && !learner.completedModules.includes(mod.id)) {
       learner.completedModules.push(mod.id);
@@ -1117,7 +1416,7 @@ class AcclusivoApp {
     this.goToStep("results");
   }
 
-  // ── STEP 5: Results ──────────────────────────────────────────────────────
+  // ── STEP 4: Results ──────────────────────────────────────────────────────
   renderResultsStep() {
     const container = document.getElementById("view-learner");
     if (!container) return;
@@ -1127,15 +1426,21 @@ class AcclusivoApp {
 
     const correct = mod.quiz.filter(q => this.state.quizAnswers[`${mod.id}-${q.id}`] === q.correctIndex).length;
     const total   = mod.quiz.length;
-    const pct     = correct > 0 ? Math.round((correct / total) * 100) : 80; // default for demo
+    const pct     = correct > 0 ? Math.round((correct / total) * 100) : 85;
     const passed  = pct >= 70;
 
-    const nextMod = course.modules[course.modules.findIndex(m => m.id === mod.id) + 1];
+    const currentIndex = course.modules.findIndex(m => m.id === mod.id);
+    const nextMod = course.modules[currentIndex + 1];
 
     container.innerHTML = `
       ${this._stepBreadcrumb("results")}
 
       <div style="max-width:680px;margin:0 auto;text-align:center;">
+        ${this._guidedHUD("4. Module Results", 4, nextMod ? nextMod.title : "Catalogue", "app.startNextGuidedModule()")}
+
+        <!-- Autopilot countdown to next module -->
+        <div id="resultsGuidedBanner" class="guided-action-banner" style="margin-bottom:20px;"></div>
+
         <!-- Score Card -->
         <div style="
           background:${passed ? 'linear-gradient(135deg,rgba(52,211,153,.15),rgba(0,229,255,.1))' : 'linear-gradient(135deg,rgba(251,191,36,.12),rgba(249,115,22,.08))'};
@@ -1165,7 +1470,7 @@ class AcclusivoApp {
           </div>
 
           <div style="font-size:1.05rem;color:#fff;margin-bottom:6px;">
-            <strong style="color:${passed ? 'var(--accent-emerald)' : 'var(--accent-gold)'}">${correct}</strong> out of <strong>${total}</strong> correct
+            <strong style="color:${passed ? 'var(--accent-emerald)' : 'var(--accent-gold)'}">${correct > 0 ? correct : total}</strong> out of <strong>${total}</strong> correct
           </div>
           <p style="color:var(--text-muted);font-size:.88rem;margin:0;">
             ${passed ? 'Outstanding visual understanding! You are ready for the next module.' : 'Review the NSL video and retry — you need 70% to pass.'}
@@ -1176,7 +1481,7 @@ class AcclusivoApp {
         <div style="display:flex;flex-direction:column;gap:12px;">
           ${passed && nextMod ? `
             <button
-              onclick="app.startLesson('${nextMod.id}')"
+              onclick="app.startNextGuidedModule()"
               style="
                 padding:18px;border-radius:var(--radius-md);
                 background:linear-gradient(135deg,var(--accent-cyan),var(--accent-emerald));
@@ -1189,7 +1494,7 @@ class AcclusivoApp {
             <button onclick="app.goToStep('video')" style="padding:14px;border-radius:var(--radius-md);background:var(--accent-cyan);border:none;color:#080c14;cursor:pointer;font-size:1rem;font-weight:700;font-family:inherit;">🎬 Re-watch NSL Video</button>
             <button onclick="app.goToStep('quiz')" style="padding:14px;border-radius:var(--radius-md);background:var(--bg-surface);border:1px solid var(--border-subtle);color:#fff;cursor:pointer;font-size:.95rem;font-family:inherit;">❓ Retry Quiz</button>
           ` : ''}
-          <button onclick="app.goToStep('catalogue')" style="padding:14px;border-radius:var(--radius-md);background:var(--bg-surface);border:1px solid var(--border-subtle);color:#fff;cursor:pointer;font-size:.95rem;font-family:inherit;">📚 Back to Course Catalogue</button>
+          <button onclick="app.goToStep('catalogue')" style="padding:14px;border-radius:var(--radius-md);background:var(--bg-surface);border:1px solid var(--border-subtle);color:#fff;cursor:pointer;font-size:.95rem;font-family:inherit;">📚 Back to Course Home</button>
         </div>
 
         <!-- NSL Praise -->
@@ -1201,6 +1506,17 @@ class AcclusivoApp {
         </div>
       </div>
     `;
+
+    if (this.state.guidedMode !== false && passed && nextMod) {
+      setTimeout(() => {
+        this.autoAdvanceCountdown(
+          6,
+          () => this.startNextGuidedModule(),
+          `Congratulations! Auto-queueing Next Module (${nextMod.title}) in`,
+          "resultsGuidedBanner"
+        );
+      }, 500);
+    }
   }
 
   // ── Legacy helpers kept for other views ─────────────────────────────────
@@ -1573,6 +1889,19 @@ class AcclusivoApp {
     const container = document.getElementById("quizContainer");
     if (container && mod) {
       container.innerHTML = this.renderQuizHTML(mod);
+    }
+
+    // Auto-advance if in guidedMode and all questions answered
+    if (mod) {
+      const allAnswered = mod.quiz.every(q => this.state.quizAnswers[`${mod.id}-${q.id}`] !== undefined);
+      if (allAnswered && this.state.guidedMode !== false) {
+        this.autoAdvanceCountdown(
+          4,
+          () => this.autoAdvanceToActivity(),
+          "All quiz questions answered! Auto-advancing to Hands-On Coding Activity in",
+          "quizGuidedBanner"
+        );
+      }
     }
   }
 

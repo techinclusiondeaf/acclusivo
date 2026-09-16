@@ -2152,5 +2152,153 @@ body.light-theme .ai-plan-box {
   border-color: #0d9488;
 }
 
+/* ==========================================================================
+   DEAF GUIDED AUTOPILOT JOURNEY & AUTOMATIC TRANSITIONS
+   ========================================================================== */
+
+.guided-hud-bar {
+  background: linear-gradient(135deg, rgba(8, 12, 20, 0.95), rgba(15, 23, 42, 0.95));
+  backdrop-filter: blur(12px);
+  border: 1.5px solid var(--accent-cyan);
+  border-radius: var(--radius-md);
+  padding: 12px 20px;
+  margin-bottom: 22px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5), 0 0 20px var(--accent-cyan-glow);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  position: relative;
+  overflow: hidden;
+}
+
+.guided-pulse-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 229, 255, 0.15);
+  border: 1px solid var(--accent-cyan);
+  color: #38bdf8;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.guided-pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent-cyan);
+  box-shadow: 0 0 8px var(--accent-cyan);
+  animation: pulseDot 1.4s ease-in-out infinite;
+}
+
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(1.3); }
+}
+
+.guided-countdown-track {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 99px;
+  overflow: hidden;
+  position: relative;
+  margin-top: 6px;
+}
+
+.guided-countdown-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-cyan), var(--accent-emerald));
+  border-radius: 99px;
+  width: 100%;
+  transition: width 1s linear;
+}
+
+.guided-action-banner {
+  background: linear-gradient(135deg, rgba(0, 229, 255, 0.12), rgba(0, 200, 150, 0.08));
+  border: 2px solid var(--accent-cyan);
+  border-radius: var(--radius-lg);
+  padding: 20px 24px;
+  margin: 24px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+}
+
+.nsl-welcome-hero {
+  background: linear-gradient(135deg, rgba(0, 229, 255, 0.15), rgba(16, 185, 129, 0.1));
+  border: 2px solid var(--accent-cyan);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  margin-bottom: 24px;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5), 0 0 25px var(--accent-cyan-glow);
+  position: relative;
+  overflow: hidden;
+}
+
+.nsl-welcome-hero::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--accent-cyan), var(--accent-emerald), var(--accent-gold));
+}
+
+.guided-countdown-ring {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 3px solid var(--accent-cyan);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--accent-cyan);
+  background: rgba(0, 229, 255, 0.1);
+  box-shadow: 0 0 15px var(--accent-cyan-glow);
+  flex-shrink: 0;
+}
+
+body.light-theme .guided-hud-bar {
+  background: #ffffff;
+  border-color: #0284c7;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+}
+
+body.light-theme .guided-action-banner {
+  background: #f0fdfa;
+  border-color: #0d9488;
+}
+
+body.light-theme .nsl-welcome-hero {
+  background: #f0fdfa;
+  border-color: #0284c7;
+}
+
+body.high-contrast .guided-hud-bar,
+body.high-contrast .guided-action-banner,
+body.high-contrast .nsl-welcome-hero {
+  background: #000000 !important;
+  border: 3px solid #ffff00 !important;
+  box-shadow: none !important;
+}
+
+body.high-contrast .guided-countdown-fill {
+  background: #ffff00 !important;
+}
+
+
 
 
